@@ -1,0 +1,35 @@
+#!/usr/bin/python
+
+import sys
+
+MAX_RANK = 10
+l = [[] for i in range (0, MAX_RANK) ]
+lemma = sys.argv[1]
+
+for line in sys.stdin.readlines():
+  (num, goal) = line.split(": ",1)
+    
+  if lemma == "executable":
+    if goal.startswith("!Shk( ~PAN,"): l[0].append(num)
+    elif goal.startswith("!IssuingBank( ~PAN, $Bank"): l[0].append(num)
+    elif goal.startswith("!AIP( ~PAN, AIP"): l[0].append(num)
+    elif goal.startswith("Recv( $Terminal, $Bank,"): l[1].append(num)
+    elif goal.startswith("!KU( MAC(f(~MK, ATC),"): l[2].append(num)
+    #elif goal.startswith("!KU( sign(<'02', $Bank,"): l[3].append(num)
+    #elif goal.startswith("!KU( sign(<'04', ~PAN.1,"): l[4].append(num)
+    elif goal.startswith("!KU( ~"): l[5].append(num)
+    else: l[9].append(num)
+  
+  elif lemma.startswith("auth_to_"):
+    if "Visa" in goal or "CTQ" in goal or "TTQ" in goal: l[9].append(num)
+    elif goal.startswith("!KU( ~privk"): l[0].append(num)
+    elif goal.startswith("!KU( sign("): l[1].append(num)
+    #elif goal.startswith("Recv( $Terminal, $Bank,"): l[2].append(num)
+    else: l[9].append(num)
+
+  else:
+    exit(0)
+
+for rank in l:
+  for num in rank:
+    print num
