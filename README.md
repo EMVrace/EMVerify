@@ -1,46 +1,49 @@
 # EMVerify
 
-This is a [Tamarin](https://tamarin-prover.github.io/)-based, full-scale, security analysis of the EMV standard.
+This is a [Tamarin](https://tamarin-prover.github.io/)-based security analysis of the EMV standard. This is the complementary material for our IEEE S&P 2021 [article](https://emvrace.github.io/).
 
 ## Folder layout
-* [models-n-proofs](./models-n-proofs): contains the auto-generated, target models and their proofs (`.proof`) accommodated in the following two folders:
-  * [contact](./models-n-proofs/contact): contains the files derived from `Contact.spthy`.
-  * [contactless](./models-n-proofs/contactless): contains the files derived from `Contactless.spthy`.
-* [tools](./tools): contains useful scripts:
-  * `collect`: Python script that summarizes the proofs in an human-readable HTML file. It also generates LaTeX code of the summary table.
-  * `parse_facts`: Python script that prints all facts of the input model into an output HTML file. It helps detecting mismatching facts, bugs, etc.
-  * `decomment`: Python script that prints a comment-free copy of the input model.
-* `Contact.spthy`: generic model of EMV contact.
-* `Contactless.spthy`: generic model of EMV contactless.
-* `Makefile`: GNU script to generate the target models and run the Tamarin analysis of them.
+
+* [models-n-proofs](./models-n-proofs/): contains the auto-generated, target models and their proofs (`.proof`) accommodated in the following two folders:
+	* [contact](./models-n-proofs/contact/): contains the files derived from `Contact.spthy`.
+	* [contactless](./models-n-proofs/contactless/): contains the files derived from `Contactless.spthy`.
+* [tools](./tools/): contains useful scripts:
+	* [`collect`](./tools/collect): Python script that summarizes the proofs in an human-readable HTML file. It also generates LaTeX code of the summary table.
+	* [`parse_facts`](./tools/parse_facts): Python script that prints all facts of the input model into an output HTML file. It helps detecting mismatching facts, bugs, etc.
+	* [`decomment`](./tools/decomment): Python script that prints a comment-free copy of the input model.
+* [`Contact.spthy`](./Contact.spthy): generic model of EMV contact.
+* [`Contactless.spthy`](./Contactless.spthy): generic model of EMV contactless.
+* [`Makefile`](./Makefile): GNU script to generate the target models and run the Tamarin analysis of them.
 * `*.oracle`: proof-support oracles.
 * `results-*.html`: the analysis results in HTML format.
 
 ## Usage
+
 From the two generic models, the Makefile generates what we call *target models*. These are models that are composed of one generic model in addition to extra rules that produce the `Commit` facts, which are used for the properties' (in)validation. A target model is generated and then analyzed with Tamarin, all by using `make` with the appropriate variable instances.
 
 The full set of variables is listed next:
+
 * `generic`: the generic model file (without the `.spthy` extension). Valid instances are:
-  * `Contact`, and
-  * `Contactless`(default).
+	* `Contact`, and
+	* `Contactless`(default).
 * `kernel`: the kernel (which is the EMV jargon for card schemes). Valid instances are:
-  * `Mastercard`(default), and
-  * `Visa`.
+	* `Mastercard`(default), and
+	* `Visa`.
 * `auth`: the Offline Data Authentication (ODA) method. Valid instances are:
-  * `SDA`,
-  * `DDA`,
-  * `CDA`(default), and
-  * `EMV`.
+	* `SDA`,
+	* `DDA`,
+	* `CDA`(default), and
+	* `EMV`.
 * `CVM`: the cardholder verification method user/supported. Valid instances are:
-  * `NoPIN`,
-  * `PlainPIN`,
-  * `EncPIN`, and
-  * `OnlinePIN`(default).
+	* `NoPIN`,
+	* `PlainPIN`,
+	* `EncPIN`, and
+	* `OnlinePIN`(default).
 * `value`: the value of the transaction (i.e., whether it is above the CVM-required limit or not). Valid instances are:
-  * `Low`(default), and
-  * `High`.
+	* `Low`(default), and
+	* `High`.
 * `oracle`: references the oracle to be used to assist the proofs.
-* `decomment`: if set to `yes`, the auto-generated models will have no comments (this is done with the [decomment](./tools/decomment) script).
+* `decomment`: if set to `yes`, the auto-generated models will have no comments.
 * `fix`: if defined (with any value), the input to the SDAD signature in the Visa contactless protocol becomes ⟨NC, CID, AC, PDOL, ATC, CTQ, UN, IAD, AIP⟩. This is the proposed fix that defends against modification of the Application Cryptogram in fDDA transactions.
 
 For example:
@@ -50,7 +53,9 @@ make generic=Contactless kernel=Mastercard auth=CDA CVM=OnlinePIN value=High
 generates the target model `Mastercard_CDA_OnlinePIN_High.spthy` from the generic model `Contactless.spthy`, analyzes it with Tamarin, and writes the proof into `Mastercard_CDA_OnlinePIN_High.proof`.
 
 ## Full-scale analysis 
+
 We have split our analysis of the **40** target models into three groups:
+
 1. `Mastercard_<auth>_<CVM>_<value>`: used for the security analysis of accepted, contactless transactions, which, in the committing agent's perspective:
 	* used Mastercard's kernel/protocol,
 	* used the ODA method `<auth>`,
@@ -77,11 +82,11 @@ To understand the way we instrument the target models auto-generation, consider 
 /*if(Visa)
 rule Terminal_Commits_ARQC_Visa:
     let PDOL = <TTQ, $amount, country, currency, date, type, ~UN>
-        /*if(DDA) AIP = <'DDA', furtherData> endif(DDA)*/
-        /*if(EMV) AIP = <'EMV', furtherData> endif(EMV)*/
-        /*if(Low) value = 'Low' endif(Low)*/
-        /*if(High) value = 'High' endif(High)*/
-        transaction = <~PAN, AIP, CVM, PDOL, ATC, AC, IAD>
+    /*if(DDA) AIP = <'DDA', furtherData> endif(DDA)*/
+    /*if(EMV) AIP = <'EMV', furtherData> endif(EMV)*/
+    /*if(Low) value = 'Low' endif(Low)*/
+    /*if(High) value = 'High' endif(High)*/
+      transaction = <~PAN, AIP, CVM, PDOL, ATC, AC, IAD>
     in
     [ Terminal_Received_AC_Visa($Terminal, $Bank, $CA,
         nc, 'ARQC', transaction, ~channelID),
@@ -180,26 +185,36 @@ make generic=Contact auth=CDA CVM=OnlinePIN authz=Online
 ## Verified fixes for EMV contactless
 
 ### Mastercard
+
 Mastercard's most common configuration (i.e. `auth=CDA` and `CVM=OnlinePIN`) used nowadays is secure.
 
 ### Visa
-**Prevent the PIN bypass attack** We recommend that terminals should use DDA for online transactions. That is, all the terminals must, for all transactions:
-1. set the 1st bit of TTQ’s first byte, and
-2. verify the SDAD signature.
 
-These two measures in conjunction make high-value transactions be processed with Visa’s secure configuration.
+**To prevent the PIN bypass attack**, we recommend that:
+* **1**: All terminals must the 1st bit of TTQ’s first byte for all transactions, and
+* **2**: All terminals must verify the SDAD signature for all transactions.
 
-**Prevent the offline attack** We propose that either:
-* 3(a) all terminals set the 8th bit of TTQ’s second byte for all transactions; or
-* 3(b) the input to the SDAD signature is ⟨NC, CID, AC, PDOL, ATC, CTQ, UN, IAD, AIP⟩.
+In conjunction, these two recommendations make high-value transactions be processed with Visa’s secure configuration.
 
-The fix 3(a) makes all transactions be processed online and is preferable over 3(b) because 3(a) does not require changes to the standard and therefore does not affect the consumer cards in circulation.
+**To prevent the offline attack**, we recommend that either:
+* **3(a)**: All terminals set the 8th bit of TTQ’s second byte for all transactions, or
+* **3(b)**: The input to the SDAD signature is ⟨NC, CID, AC, PDOL, ATC, CTQ, UN, IAD, AIP⟩.
 
-The Tamarin proof of 3(b) is `models-n-proofs/contactless/Visa_DDA_Low_Fix.proof` and one can generate it by running:
+The recommendation 3(a) makes all transactions be processed online and is preferable over 3(b) because 3(a) does not require changes to the standard and therefore does not affect the consumer cards in circulation. The Tamarin proof of 3(b) is `models-n-proofs/contactless/Visa_DDA_Low_Fix.proof` and one can generate it by running:
+
 ```shell
-kernel=Visa auth=DDA value=Low fix=Yes
+make generic=Contactless kernel=Visa auth=DDA value=Low fix=Yes
 ```
 
 ## Notes
-1. Different versions of GNU use different regex syntax. Thus, you might need to tweak the regexes in the `sed` commands of the Makefile.
-2. The authentication properties we use are *non-injective agreement* and *injective agreement* (see their Tamarin specification [here](https://tamarin-prover.github.io/manual/book/006_property-specification.html#authentication)). For each model, if non-injective agreement fails, we do not analyze injective agreement as it fails too given that the latter property is stronger than the former.
+
+* Different versions of GNU use different regex syntax. Thus, you might need to tweak the regexes in the `sed` commands of the Makefile.
+* The authentication properties we use are *non-injective agreement* and *injective agreement* (see their Tamarin specification [here](https://tamarin-prover.github.io/manual/book/006_property-specification.html#authentication)). For each model, if non-injective agreement fails, we do not analyze injective agreement as it fails too given that the latter property is stronger than the former.
+
+## Authors
+
+* [David Basin](https://people.inf.ethz.ch/basin/)
+* [Ralf Sasse](https://people.inf.ethz.ch/rsasse/)
+* [Jorge Toro](https://jorgetp.github.io)
+
+
