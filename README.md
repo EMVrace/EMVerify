@@ -1,6 +1,6 @@
 # EMVerify
 
-This is a [Tamarin](https://tamarin-prover.github.io/)-based security analysis of the EMV standard. This is the complementary material for our IEEE S&P 2021 [article](https://emvrace.github.io/).
+This is a [Tamarin](https://tamarin-prover.github.io/)-based security analysis of the EMV standard and is the complementary material for our IEEE S&P 2021 paper *The EMV Standard: Break, Fix, Verify*. Further information on this work is available at [https://emvrace.github.io](https://emvrace.github.io/).
 
 ## Folder layout
 
@@ -77,16 +77,17 @@ The analysis of the EMV contactless protocol was performed using the Tamarin rel
 The analysis of the EMV contact protocol was performed using the Tamarin release 1.5.1 on a computing server running Ubuntu 16.04.3 with two Intel(R) Xeon(R) E5-2650 v4 @ 2.20GHz CPUs (with 12 cores each) and 256GB of RAM. Here we used 10 threads and at most 20GB of RAM per target model.
 
 ## Auto-generation of target models
+
 To understand the way we instrument the target models auto-generation, consider the following snippet from our `Contactless.spthy` generic model:
 ```
 /*if(Visa)
 rule Terminal_Commits_ARQC_Visa:
     let PDOL = <TTQ, $amount, country, currency, date, type, ~UN>
-    /*if(DDA) AIP = <'DDA', furtherData> endif(DDA)*/
-    /*if(EMV) AIP = <'EMV', furtherData> endif(EMV)*/
-    /*if(Low) value = 'Low' endif(Low)*/
-    /*if(High) value = 'High' endif(High)*/
-      transaction = <~PAN, AIP, CVM, PDOL, ATC, AC, IAD>
+        /*if(DDA) AIP = <'DDA', furtherData> endif(DDA)*/
+        /*if(EMV) AIP = <'EMV', furtherData> endif(EMV)*/
+        /*if(Low) value = 'Low' endif(Low)*/
+        /*if(High) value = 'High' endif(High)*/
+        transaction = <~PAN, AIP, CVM, PDOL, ATC, AC, IAD>
     in
     [ Terminal_Received_AC_Visa($Terminal, $Bank, $CA,
         nc, 'ARQC', transaction, ~channelID),
@@ -120,6 +121,7 @@ rule Terminal_Commits_ARQC_Visa:
 This (new) rule models the terminal's acceptance of an online-authorized transaction and produces the `Commit` and `TerminalAccepts` facts.
 
 ## Valid configurations
+
 The following `make` commands run all possible valid target configurations:
 
 ```shell
