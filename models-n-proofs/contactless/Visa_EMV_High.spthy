@@ -99,7 +99,7 @@ rule Create_Card:
       SecretMK(~MK),
       Honest($CA), Honest($Bank), Honest(~PAN) ]->
     [ !AIP(~PAN, AIP),
-      !Mastercard(~PAN),
+      !AID(~PAN, 'Mastercard'),
       !SupportedCVM(~PAN, CVM),
       !Shk(~PAN, ~MK),
       !IssuingBank(~PAN, $Bank),
@@ -146,7 +146,7 @@ rule Terminal_Sends_GPO:
 rule Card_Responds_To_GPO:
     [ In(<'GET_PROCESSING_OPTIONS', PDOL>),
       !AIP(~PAN, AIP),
-      !Mastercard(~PAN),
+      !AID(~PAN, 'Mastercard'),
       !ATC(ATC) ]
   --[ OneCard(),
       Once(<~PAN, ATC, 'Card'>) ]->
@@ -458,7 +458,7 @@ rule Create_Card_Visa:
       SecretPrivkCard(~privkCard),
       Honest($CA), Honest($Bank), Honest(~PAN) ]->
     [ !LtkCard(~PAN, ~privkCard),
-      !Visa(~PAN),
+      !AID(~PAN, 'Visa'),
       Out(pubkCard),
       !ExpirationDate(~PAN, ~expDate),
       !Shk(~PAN, ~MK),
@@ -508,7 +508,7 @@ rule Card_Responds_To_GPO_EMV_Visa:
     in
     [ In(<'GET_PROCESSING_OPTIONS', PDOL>),
       !Shk(~PAN, ~MK),
-      !Visa(~PAN),
+      !AID(~PAN, 'Visa'),
       !ExpirationDate(~PAN, ~expDate),
       !IssuingBank(~PAN, $Bank),
       !ATC(ATC) ]
@@ -530,7 +530,7 @@ rule Card_Responds_To_GPO_DDA_Visa:
     in
     [ In(<'GET_PROCESSING_OPTIONS', PDOL>),
       !Shk(~PAN, ~MK),
-      !Visa(~PAN),
+      !AID(~PAN, 'Visa'),
       !ExpirationDate(~PAN, ~expDate),
       !ATC(ATC) ]
   --[ OneCard(),
@@ -563,7 +563,8 @@ rule Card_Responds_To_ReadRecord_EMV_Visa:
 rule Card_Responds_To_ReadRecord_DDA_Visa:
     let PDOL = <TTQ, amount, country, currency, date, type, UN>
         AIP = <'DDA', furtherData>
-        SDAD = sign{format, ATC, UN, amount, 'CHF', ~nc, CTQ, AIP}~privkCard
+        d = <format, ATC, UN, amount, 'CHF', ~nc, CTQ, AIP>
+        SDAD = sign{d}~privkCard
         transaction = <~PAN, AIP, CTQ, PDOL, ATC, AC, IAD>
     in
     [ Card_Responded_To_GPO_Visa(~PAN, AIP, PDOL, ATC, AC, CID, CTQ, IAD),
@@ -642,7 +643,7 @@ rule Terminal_Processes_CVM_OnlinePIN_Visa:
     [ Terminal_Ready_To_Send_AC_Visa($Terminal, ~PAN, PDOL, AIP, $CA, $Bank,
         nc, IAD, AC, 'ARQC', ATC, 'OnlinePIN', aenc{PIN}pubkBank) ]
 
-rule Terminal_Sends_GenerateAC_Visa:
+rule Terminal_Sends_AC_Visa:
     let transaction = <~PAN, AIP, CVM, PDOL, ATC, AC, IAD>
     in
     [ Terminal_Ready_To_Send_AC_Visa($Terminal, ~PAN, PDOL, AIP, $CA, $Bank,

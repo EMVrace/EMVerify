@@ -72,9 +72,9 @@ We have split our analysis of the **40** target models into three groups:
 
 The auto-generated models allow for any type of transactions to take place, the properties are verified only for **accepted transactions that follow the selected target configuration**. All target models are the same except for the rules that produce the `Commit` facts. Such rules do not model any interaction with the adversary, the network, or any other agent, i.e., they are simply rules to produce the `Commit` facts.
 
-The analysis of the EMV contactless protocol was performed using the Tamarin release 1.4.1 on a MacBook Pro laptop running macOS 10.15.4 with a Quad-Core Intel Core i7 @ 2.5 GHz CPU and 16 GB of RAM.
+<!--The analysis of the EMV contactless protocol was performed using the Tamarin release 1.4.1 on a MacBook Pro laptop running macOS 10.15.4 with a Quad-Core Intel Core i7 @ 2.5 GHz CPU and 16 GB of RAM.-->
 
-The analysis of the EMV contact protocol was performed using the Tamarin release 1.5.1 on a computing server running Ubuntu 16.04.3 with two Intel(R) Xeon(R) E5-2650 v4 @ 2.20GHz CPUs (with 12 cores each) and 256GB of RAM. Here we used 10 threads and at most 20GB of RAM per target model.
+All proofs were constructed using Tamarin version 1.5.1 on a computing server running Ubuntu 16.04.3 with two Intel(R) Xeon(R) E5-2650 v4 @ 2.20GHz CPUs (with 12 cores each) and 256GB of RAM. Here we used 10 threads and at most 20GB of RAM per target model.
 
 ## Auto-generation of target models
 
@@ -217,6 +217,4 @@ make generic=Contactless kernel=Visa auth=DDA value=Low fix=Yes
 
 * [David Basin](https://people.inf.ethz.ch/basin/)
 * [Ralf Sasse](https://people.inf.ethz.ch/rsasse/)
-* [Jorge Toro](https://jorgetp.github.io)
-
-
+* [Jorge Toro](https://jorgetp.github.io) (maintainer of this repository)

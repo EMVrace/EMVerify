@@ -116,7 +116,7 @@ rule (modulo E) Create_Card:
   Honest( $Bank ), Honest( ~PAN )
   ]->
    [
-   !AIP( ~PAN, <auth, $furtherData> ), !Mastercard( ~PAN ),
+   !AIP( ~PAN, <auth, $furtherData> ), !AID( ~PAN, 'Mastercard' ),
    !SupportedCVM( ~PAN, CVM ), !Shk( ~PAN, ~MK ),
    !IssuingBank( ~PAN, $Bank ),
    Set_Records( ~PAN, ~expDate, $CA, certBank,
@@ -202,7 +202,7 @@ rule (modulo E) Terminal_Sends_GPO:
 rule (modulo E) Card_Responds_To_GPO:
    [
    In( <'GET_PROCESSING_OPTIONS', PDOL> ), !AIP( ~PAN, AIP ),
-   !Mastercard( ~PAN ), !ATC( ATC )
+   !AID( ~PAN, 'Mastercard' ), !ATC( ATC )
    ]
   --[ OneCard( ), Once( <~PAN, ATC, 'Card'> ) ]->
    [ Out( <AIP, 'AFL'> ), Card_Responded_To_GPO( ~PAN, PDOL, ATC ) ]
@@ -1450,9 +1450,9 @@ rule (modulo E) Create_Card_Visa:
   Honest( ~PAN )
   ]->
    [
-   !LtkCard( ~PAN, ~privkCard ), !Visa( ~PAN ), Out( pk(~privkCard) ),
-   !ExpirationDate( ~PAN, ~expDate ), !Shk( ~PAN, ~MK ),
-   !IssuingBank( ~PAN, $Bank ),
+   !LtkCard( ~PAN, ~privkCard ), !AID( ~PAN, 'Visa' ),
+   Out( pk(~privkCard) ), !ExpirationDate( ~PAN, ~expDate ),
+   !Shk( ~PAN, ~MK ), !IssuingBank( ~PAN, $Bank ),
    !Records_Visa( ~PAN, ~expDate, $CA, certBank,
                   <<'04', ~PAN, pk(~privkCard), $Bank>, 
                    sign(<'04', ~PAN, pk(~privkCard), $Bank>, ~privkBank)>
@@ -1497,8 +1497,9 @@ rule (modulo E) Card_Responds_To_GPO_EMV_Visa:
    In( <'GET_PROCESSING_OPTIONS', <acType, CVM>, amount, country, currency, 
         date, type, UN>
    ),
-   !Shk( ~PAN, ~MK ), !Visa( ~PAN ), !ExpirationDate( ~PAN, ~expDate ),
-   !IssuingBank( ~PAN, $Bank ), !ATC( ATC )
+   !Shk( ~PAN, ~MK ), !AID( ~PAN, 'Visa' ),
+   !ExpirationDate( ~PAN, ~expDate ), !IssuingBank( ~PAN, $Bank ),
+   !ATC( ATC )
    ]
   --[
   OneCard( ), Once( <~PAN, ATC, 'Card'> ), NEq( CVM, 'CDCVM' ),
@@ -1542,8 +1543,8 @@ rule (modulo E) Card_Responds_To_GPO_DDA_Visa:
    In( <'GET_PROCESSING_OPTIONS', <CID, CVM>, amount, country, currency, 
         date, type, UN>
    ),
-   !Shk( ~PAN, ~MK ), !Visa( ~PAN ), !ExpirationDate( ~PAN, ~expDate ),
-   !ATC( ATC )
+   !Shk( ~PAN, ~MK ), !AID( ~PAN, 'Visa' ),
+   !ExpirationDate( ~PAN, ~expDate ), !ATC( ATC )
    ]
   --[ OneCard( ), Once( <~PAN, ATC, 'Card'> ), NEq( CVM, 'CDCVM' ) ]->
    [
@@ -2248,7 +2249,7 @@ rule (modulo E) Terminal_Processes_CVM_OnlinePIN_Visa:
 
   /* has exactly the trivial AC variant */
 
-rule (modulo E) Terminal_Sends_GenerateAC_Visa:
+rule (modulo E) Terminal_Sends_AC_Visa:
    [
    Terminal_Ready_To_Send_AC_Visa( $Terminal, ~PAN, PDOL, AIP, $CA, $Bank,
                                    nc, IAD, AC, CID, ATC, CVM, encPIN
@@ -22003,7 +22004,5 @@ analyzed: models-n-proofs/contactless/Mastercard_SDA_OnlinePIN_High.spthy
   secrecy_PAN (all-traces): falsified - found trace (7 steps)
 
 ==============================================================================
-
-real	12m36.115s
-user	68m42.619s
-sys	10m12.331s
+3172.65user 2220.30system 12:28.08elapsed 720%CPU (0avgtext+0avgdata 981144maxresident)k
+0inputs+35768outputs (0major+13113172minor)pagefaults 0swaps

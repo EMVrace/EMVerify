@@ -116,7 +116,7 @@ rule (modulo E) Create_Card:
   Honest( $Bank ), Honest( ~PAN )
   ]->
    [
-   !AIP( ~PAN, <auth, $furtherData> ), !Mastercard( ~PAN ),
+   !AIP( ~PAN, <auth, $furtherData> ), !AID( ~PAN, 'Mastercard' ),
    !SupportedCVM( ~PAN, CVM ), !Shk( ~PAN, ~MK ),
    !IssuingBank( ~PAN, $Bank ),
    Set_Records( ~PAN, ~expDate, $CA, certBank,
@@ -202,7 +202,7 @@ rule (modulo E) Terminal_Sends_GPO:
 rule (modulo E) Card_Responds_To_GPO:
    [
    In( <'GET_PROCESSING_OPTIONS', PDOL> ), !AIP( ~PAN, AIP ),
-   !Mastercard( ~PAN ), !ATC( ATC )
+   !AID( ~PAN, 'Mastercard' ), !ATC( ATC )
    ]
   --[ OneCard( ), Once( <~PAN, ATC, 'Card'> ) ]->
    [ Out( <AIP, 'AFL'> ), Card_Responded_To_GPO( ~PAN, PDOL, ATC ) ]
@@ -1372,9 +1372,9 @@ rule (modulo E) Create_Card_Visa:
   Honest( ~PAN )
   ]->
    [
-   !LtkCard( ~PAN, ~privkCard ), !Visa( ~PAN ), Out( pk(~privkCard) ),
-   !ExpirationDate( ~PAN, ~expDate ), !Shk( ~PAN, ~MK ),
-   !IssuingBank( ~PAN, $Bank ),
+   !LtkCard( ~PAN, ~privkCard ), !AID( ~PAN, 'Visa' ),
+   Out( pk(~privkCard) ), !ExpirationDate( ~PAN, ~expDate ),
+   !Shk( ~PAN, ~MK ), !IssuingBank( ~PAN, $Bank ),
    !Records_Visa( ~PAN, ~expDate, $CA, certBank,
                   <<'04', ~PAN, pk(~privkCard), $Bank>, 
                    sign(<'04', ~PAN, pk(~privkCard), $Bank>, ~privkBank)>
@@ -1419,8 +1419,9 @@ rule (modulo E) Card_Responds_To_GPO_EMV_Visa:
    In( <'GET_PROCESSING_OPTIONS', <acType, CVM>, amount, country, currency, 
         date, type, UN>
    ),
-   !Shk( ~PAN, ~MK ), !Visa( ~PAN ), !ExpirationDate( ~PAN, ~expDate ),
-   !IssuingBank( ~PAN, $Bank ), !ATC( ATC )
+   !Shk( ~PAN, ~MK ), !AID( ~PAN, 'Visa' ),
+   !ExpirationDate( ~PAN, ~expDate ), !IssuingBank( ~PAN, $Bank ),
+   !ATC( ATC )
    ]
   --[
   OneCard( ), Once( <~PAN, ATC, 'Card'> ), NEq( CVM, 'CDCVM' ),
@@ -1464,8 +1465,8 @@ rule (modulo E) Card_Responds_To_GPO_DDA_Visa:
    In( <'GET_PROCESSING_OPTIONS', <CID, CVM>, amount, country, currency, 
         date, type, UN>
    ),
-   !Shk( ~PAN, ~MK ), !Visa( ~PAN ), !ExpirationDate( ~PAN, ~expDate ),
-   !ATC( ATC )
+   !Shk( ~PAN, ~MK ), !AID( ~PAN, 'Visa' ),
+   !ExpirationDate( ~PAN, ~expDate ), !ATC( ATC )
    ]
   --[ OneCard( ), Once( <~PAN, ATC, 'Card'> ), NEq( CVM, 'CDCVM' ) ]->
    [
@@ -2170,7 +2171,7 @@ rule (modulo E) Terminal_Processes_CVM_OnlinePIN_Visa:
 
   /* has exactly the trivial AC variant */
 
-rule (modulo E) Terminal_Sends_GenerateAC_Visa:
+rule (modulo E) Terminal_Sends_AC_Visa:
    [
    Terminal_Ready_To_Send_AC_Visa( $Terminal, ~PAN, PDOL, AIP, $CA, $Bank,
                                    nc, IAD, AC, CID, ATC, CVM, encPIN
@@ -2406,7 +2407,7 @@ solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
     case Create_Card_Visa
     solve( !IssuingBank( ~PAN, $Bank ) ▶₄ #i )
       case Create_Card_Visa
-      solve( !Visa( ~PAN ) ▶₂ #i )
+      solve( !AID( ~PAN, 'Visa' ) ▶₂ #i )
         case Create_Card_Visa
         solve( !ExpirationDate( ~PAN, ~expDate ) ▶₃ #i )
           case Create_Card_Visa
@@ -2436,7 +2437,7 @@ solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
                                                    'IAD', 'ARQC'>,
                                                   ~channelID
                        ) ▶₀ #j )
-                  case Terminal_Sends_GenerateAC_Visa_case_1
+                  case Terminal_Sends_AC_Visa_case_1
                   solve( !KU( ~PAN ) @ #vk.23 )
                     case Card_Responds_To_GPO_EMV_Visa
                     solve( !KU( ~ATC ) @ #vk.31 )
@@ -2543,16 +2544,16 @@ solve( TerminalAccepts( t ) @ #i )
                                      <TTQ, $amount, country, currency, date, type, ~UN>, ATC, AC, IAD>,
                                     ~channelID
          ) ▶₀ #i )
-    case Terminal_Sends_GenerateAC_Visa_case_01
+    case Terminal_Sends_AC_Visa_case_01
     by solve( !Value( $amount, 'High' ) ▶₁ #i )
   next
-    case Terminal_Sends_GenerateAC_Visa_case_02
+    case Terminal_Sends_AC_Visa_case_02
     by solve( !Value( $amount, 'High' ) ▶₁ #i )
   next
-    case Terminal_Sends_GenerateAC_Visa_case_03
+    case Terminal_Sends_AC_Visa_case_03
     by solve( !Value( $amount, 'High' ) ▶₁ #i )
   next
-    case Terminal_Sends_GenerateAC_Visa_case_04
+    case Terminal_Sends_AC_Visa_case_04
     solve( !Value( $amount, 'High' ) ▶₁ #i )
       case Generate_Amount_High
       solve( Recv( $Bank, $Terminal, <~channelID, 'Visa', '2'>, <'ARC', ARPC>
@@ -2923,10 +2924,10 @@ solve( TerminalAccepts( t ) @ #i )
       qed
     qed
   next
-    case Terminal_Sends_GenerateAC_Visa_case_05
+    case Terminal_Sends_AC_Visa_case_05
     by solve( !Value( $amount, 'High' ) ▶₁ #i )
   next
-    case Terminal_Sends_GenerateAC_Visa_case_06
+    case Terminal_Sends_AC_Visa_case_06
     solve( !Value( $amount, 'High' ) ▶₁ #i )
       case Generate_Amount_High
       solve( Recv( $Bank, $Terminal, <~channelID, 'Visa', '2'>, <'ARC', ARPC>
@@ -3385,7 +3386,7 @@ solve( TerminalAccepts( t ) @ #i )
       qed
     qed
   next
-    case Terminal_Sends_GenerateAC_Visa_case_07
+    case Terminal_Sends_AC_Visa_case_07
     solve( !Value( $amount, 'High' ) ▶₁ #i )
       case Generate_Amount_High
       solve( Recv( $Bank, $Terminal, <~channelID, 'Visa', '2'>, <'ARC', ARPC>
@@ -3756,7 +3757,7 @@ solve( TerminalAccepts( t ) @ #i )
       qed
     qed
   next
-    case Terminal_Sends_GenerateAC_Visa_case_08
+    case Terminal_Sends_AC_Visa_case_08
     solve( !Value( $amount, 'High' ) ▶₁ #i )
       case Generate_Amount_High
       solve( Recv( $Bank, $Terminal, <~channelID, 'Visa', '2'>, <'ARC', ARPC>
@@ -4215,7 +4216,7 @@ solve( TerminalAccepts( t ) @ #i )
       qed
     qed
   next
-    case Terminal_Sends_GenerateAC_Visa_case_09
+    case Terminal_Sends_AC_Visa_case_09
     solve( !Value( $amount, 'High' ) ▶₁ #i )
       case Generate_Amount_High
       solve( Recv( $Bank, $Terminal, <~channelID, 'Visa', '2'>, <'ARC', ARPC>
@@ -4586,7 +4587,7 @@ solve( TerminalAccepts( t ) @ #i )
       qed
     qed
   next
-    case Terminal_Sends_GenerateAC_Visa_case_10
+    case Terminal_Sends_AC_Visa_case_10
     solve( !Value( $amount, 'High' ) ▶₁ #i )
       case Generate_Amount_High
       solve( Recv( $Bank, $Terminal, <~channelID, 'Visa', '2'>, <'ARC', ARPC>
@@ -5078,7 +5079,7 @@ solve( Commit( T, P, <r, 'Terminal', t> ) @ #i )
                                      <TTQ, $amount, country, currency, date, type, ~UN>, ATC, AC, IAD>,
                                     ~channelID
          ) ▶₀ #i )
-    case Terminal_Sends_GenerateAC_Visa_case_06
+    case Terminal_Sends_AC_Visa_case_06
     solve( !Value( $amount, 'High' ) ▶₁ #i )
       case Generate_Amount_High
       solve( Recv( $Bank, $Terminal, <~channelID, 'Visa', '2'>, <'ARC', ARPC>
@@ -5350,7 +5351,5 @@ analyzed: models-n-proofs/contactless/Visa_EMV_High.spthy
   secrecy_PAN (all-traces): falsified - found trace (7 steps)
 
 ==============================================================================
-
-real	2m10.018s
-user	14m3.748s
-sys	1m49.567s
+587.61user 206.88system 1:29.53elapsed 887%CPU (0avgtext+0avgdata 707720maxresident)k
+0inputs+10528outputs (0major+2840691minor)pagefaults 0swaps

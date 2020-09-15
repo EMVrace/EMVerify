@@ -117,7 +117,7 @@ rule Create_Card:
       SecretMK(~MK),
       Honest($CA), Honest($Bank), Honest(~PAN) ]->
     [ !AIP(~PAN, AIP),//Application Interchange Profile
-      !Mastercard(~PAN),
+      !AID(~PAN, 'Mastercard'),
       !SupportedCVM(~PAN, CVM),//the bank has access to this
       !Shk(~PAN, ~MK),//master symmetric key shared by the card and the bank
       !IssuingBank(~PAN, $Bank),//annotate the issuing bank
@@ -166,7 +166,7 @@ rule Terminal_Sends_GPO:
 rule Card_Responds_To_GPO:
     [ In(<'GET_PROCESSING_OPTIONS', PDOL>),
       !AIP(~PAN, AIP),
-      !Mastercard(~PAN),
+      !AID(~PAN, 'Mastercard'),
       !ATC(ATC) ]
   --[ OneCard(),
       Once(<~PAN, ATC, 'Card'>) ]->
@@ -567,7 +567,7 @@ rule Create_Card_Visa:
       SecretPrivkCard(~privkCard),
       Honest($CA), Honest($Bank), Honest(~PAN) ]->
     [ !LtkCard(~PAN, ~privkCard),
-      !Visa(~PAN),
+      !AID(~PAN, 'Visa'),
       Out(pubkCard),      
       !ExpirationDate(~PAN, ~expDate),
       !Shk(~PAN, ~MK),//card and bank's shared (master) symmetric key
@@ -620,7 +620,7 @@ rule Card_Responds_To_GPO_EMV_Visa:
     in
     [ In(<'GET_PROCESSING_OPTIONS', PDOL>),
       !Shk(~PAN, ~MK),
-      !Visa(~PAN),
+      !AID(~PAN, 'Visa'),
       !ExpirationDate(~PAN, ~expDate),
       !IssuingBank(~PAN, $Bank),
       !ATC(ATC) ]
@@ -643,7 +643,7 @@ rule Card_Responds_To_GPO_DDA_Visa:
     in
     [ In(<'GET_PROCESSING_OPTIONS', PDOL>),
       !Shk(~PAN, ~MK),
-      !Visa(~PAN),
+      !AID(~PAN, 'Visa'),
       !ExpirationDate(~PAN, ~expDate),
       !ATC(ATC) ]
   --[ OneCard(),
@@ -775,7 +775,7 @@ rule Terminal_Processes_CVM_OnlinePIN_Visa:
         nc, IAD, AC, 'ARQC', ATC, 'OnlinePIN', aenc{PIN}pubkBank) ]
 
 //============ Transaction Authorization ==================//
-rule Terminal_Sends_GenerateAC_Visa:
+rule Terminal_Sends_AC_Visa:
     let transaction = <~PAN, AIP, CVM, PDOL, ATC, AC, IAD>
     in     
     [ Terminal_Ready_To_Send_AC_Visa($Terminal, ~PAN, PDOL, AIP, $CA, $Bank,

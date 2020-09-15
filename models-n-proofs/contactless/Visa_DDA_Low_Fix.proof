@@ -116,7 +116,7 @@ rule (modulo E) Create_Card:
   Honest( $Bank ), Honest( ~PAN )
   ]->
    [
-   !AIP( ~PAN, <auth, $furtherData> ), !Mastercard( ~PAN ),
+   !AIP( ~PAN, <auth, $furtherData> ), !AID( ~PAN, 'Mastercard' ),
    !SupportedCVM( ~PAN, CVM ), !Shk( ~PAN, ~MK ),
    !IssuingBank( ~PAN, $Bank ),
    Set_Records( ~PAN, ~expDate, $CA, certBank,
@@ -202,7 +202,7 @@ rule (modulo E) Terminal_Sends_GPO:
 rule (modulo E) Card_Responds_To_GPO:
    [
    In( <'GET_PROCESSING_OPTIONS', PDOL> ), !AIP( ~PAN, AIP ),
-   !Mastercard( ~PAN ), !ATC( ATC )
+   !AID( ~PAN, 'Mastercard' ), !ATC( ATC )
    ]
   --[ OneCard( ), Once( <~PAN, ATC, 'Card'> ) ]->
    [ Out( <AIP, 'AFL'> ), Card_Responded_To_GPO( ~PAN, PDOL, ATC ) ]
@@ -1372,9 +1372,9 @@ rule (modulo E) Create_Card_Visa:
   Honest( ~PAN )
   ]->
    [
-   !LtkCard( ~PAN, ~privkCard ), !Visa( ~PAN ), Out( pk(~privkCard) ),
-   !ExpirationDate( ~PAN, ~expDate ), !Shk( ~PAN, ~MK ),
-   !IssuingBank( ~PAN, $Bank ),
+   !LtkCard( ~PAN, ~privkCard ), !AID( ~PAN, 'Visa' ),
+   Out( pk(~privkCard) ), !ExpirationDate( ~PAN, ~expDate ),
+   !Shk( ~PAN, ~MK ), !IssuingBank( ~PAN, $Bank ),
    !Records_Visa( ~PAN, ~expDate, $CA, certBank,
                   <<'04', ~PAN, pk(~privkCard), $Bank>, 
                    sign(<'04', ~PAN, pk(~privkCard), $Bank>, ~privkBank)>
@@ -1419,8 +1419,9 @@ rule (modulo E) Card_Responds_To_GPO_EMV_Visa:
    In( <'GET_PROCESSING_OPTIONS', <acType, CVM>, amount, country, currency, 
         date, type, UN>
    ),
-   !Shk( ~PAN, ~MK ), !Visa( ~PAN ), !ExpirationDate( ~PAN, ~expDate ),
-   !IssuingBank( ~PAN, $Bank ), !ATC( ATC )
+   !Shk( ~PAN, ~MK ), !AID( ~PAN, 'Visa' ),
+   !ExpirationDate( ~PAN, ~expDate ), !IssuingBank( ~PAN, $Bank ),
+   !ATC( ATC )
    ]
   --[
   OneCard( ), Once( <~PAN, ATC, 'Card'> ), NEq( CVM, 'CDCVM' ),
@@ -1464,8 +1465,8 @@ rule (modulo E) Card_Responds_To_GPO_DDA_Visa:
    In( <'GET_PROCESSING_OPTIONS', <CID, CVM>, amount, country, currency, 
         date, type, UN>
    ),
-   !Shk( ~PAN, ~MK ), !Visa( ~PAN ), !ExpirationDate( ~PAN, ~expDate ),
-   !ATC( ATC )
+   !Shk( ~PAN, ~MK ), !AID( ~PAN, 'Visa' ),
+   !ExpirationDate( ~PAN, ~expDate ), !ATC( ATC )
    ]
   --[ OneCard( ), Once( <~PAN, ATC, 'Card'> ), NEq( CVM, 'CDCVM' ) ]->
    [
@@ -2365,7 +2366,7 @@ rule (modulo E) Terminal_Processes_CVM_OnlinePIN_Visa:
 
   /* has exactly the trivial AC variant */
 
-rule (modulo E) Terminal_Sends_GenerateAC_Visa:
+rule (modulo E) Terminal_Sends_AC_Visa:
    [
    Terminal_Ready_To_Send_AC_Visa( $Terminal, ~PAN, PDOL, AIP, $CA, $Bank,
                                    nc, IAD, AC, CID, ATC, CVM, encPIN
@@ -2633,7 +2634,7 @@ solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
                                                    'IAD', 'TC'>,
                                                   ~channelID
                        ) ▶₀ #j )
-                  case Terminal_Sends_GenerateAC_Visa
+                  case Terminal_Sends_AC_Visa
                   solve( !KU( ~PAN ) @ #vk.26 )
                     case Card_Responds_To_GPO_DDA_Visa
                     solve( !KU( ~nc ) @ #vk.54 )
@@ -2792,7 +2793,7 @@ solve( TerminalAccepts( t ) @ #i )
                                      <TTQ, $amount, country, currency, date, type, ~UN>, ATC, AC, IAD>,
                                     ~channelID
          ) ▶₀ #i )
-    case Terminal_Sends_GenerateAC_Visa_case_1
+    case Terminal_Sends_AC_Visa_case_1
     solve( !Value( $amount, 'Low' ) ▶₁ #i )
       case Generate_Amount_Low
       solve( Recv( $Bank, $Terminal, <~channelID, 'Visa', '2'>, <'ARC', ARPC>
@@ -8919,7 +8920,7 @@ solve( TerminalAccepts( t ) @ #i )
       qed
     qed
   next
-    case Terminal_Sends_GenerateAC_Visa_case_2
+    case Terminal_Sends_AC_Visa_case_2
     solve( !Value( $amount, 'Low' ) ▶₁ #i )
       case Generate_Amount_Low
       solve( Recv( $Bank, $Terminal, <~channelID, 'Visa', '2'>, <'ARC', ARPC>
@@ -15046,19 +15047,19 @@ solve( TerminalAccepts( t ) @ #i )
       qed
     qed
   next
-    case Terminal_Sends_GenerateAC_Visa_case_3
+    case Terminal_Sends_AC_Visa_case_3
     by solve( !Value( $amount, 'Low' ) ▶₁ #i )
   next
-    case Terminal_Sends_GenerateAC_Visa_case_4
+    case Terminal_Sends_AC_Visa_case_4
     by solve( !Value( $amount, 'Low' ) ▶₁ #i )
   next
-    case Terminal_Sends_GenerateAC_Visa_case_5
+    case Terminal_Sends_AC_Visa_case_5
     by solve( !Value( $amount, 'Low' ) ▶₁ #i )
   next
-    case Terminal_Sends_GenerateAC_Visa_case_6
+    case Terminal_Sends_AC_Visa_case_6
     by solve( !Value( $amount, 'Low' ) ▶₁ #i )
   next
-    case Terminal_Sends_GenerateAC_Visa_case_7
+    case Terminal_Sends_AC_Visa_case_7
     by solve( !Value( $amount, 'Low' ) ▶₁ #i )
   qed
 next
@@ -15068,7 +15069,7 @@ next
                                      <TTQ, $amount, country, currency, date, type, ~UN>, ATC, AC, IAD>,
                                     ~channelID
          ) ▶₀ #i )
-    case Terminal_Sends_GenerateAC_Visa
+    case Terminal_Sends_AC_Visa
     solve( !Value( $amount, 'Low' ) ▶₁ #i )
       case Generate_Amount_Low
       solve( BankDeclines( <~PAN, <'DDA', furtherData>, 'NoPIN', 
@@ -16807,7 +16808,7 @@ solve( Commit( T, P, <r, 'Terminal', t> ) @ #i )
                                      <TTQ, $amount, country, currency, date, type, ~UN>, ATC, AC, IAD>,
                                     ~channelID
          ) ▶₀ #i )
-    case Terminal_Sends_GenerateAC_Visa_case_1
+    case Terminal_Sends_AC_Visa_case_1
     solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
       case Card_Responds_To_ReadRecord_DDA
       solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -16889,7 +16890,7 @@ solve( Commit( T, P, <r, 'Terminal', t> ) @ #i )
       qed
     qed
   next
-    case Terminal_Sends_GenerateAC_Visa_case_2
+    case Terminal_Sends_AC_Visa_case_2
     solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
       case Card_Responds_To_ReadRecord_DDA
       solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -16971,7 +16972,7 @@ solve( Commit( T, P, <r, 'Terminal', t> ) @ #i )
       qed
     qed
   next
-    case Terminal_Sends_GenerateAC_Visa_case_3
+    case Terminal_Sends_AC_Visa_case_3
     solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
       case Card_Responds_To_ReadRecord_DDA
       solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -17053,7 +17054,7 @@ solve( Commit( T, P, <r, 'Terminal', t> ) @ #i )
       qed
     qed
   next
-    case Terminal_Sends_GenerateAC_Visa_case_4
+    case Terminal_Sends_AC_Visa_case_4
     solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
       case Card_Responds_To_ReadRecord_DDA
       solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -17107,7 +17108,7 @@ solve( Commit( T, P, <r, 'Terminal', t> ) @ #i )
       qed
     qed
   next
-    case Terminal_Sends_GenerateAC_Visa_case_5
+    case Terminal_Sends_AC_Visa_case_5
     solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
       case Card_Responds_To_ReadRecord_DDA
       solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -17192,7 +17193,7 @@ solve( Commit( T, P, <r, 'Terminal', t> ) @ #i )
       qed
     qed
   next
-    case Terminal_Sends_GenerateAC_Visa_case_6
+    case Terminal_Sends_AC_Visa_case_6
     solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
       case Card_Responds_To_ReadRecord_DDA
       solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -17246,7 +17247,7 @@ solve( Commit( T, P, <r, 'Terminal', t> ) @ #i )
       qed
     qed
   next
-    case Terminal_Sends_GenerateAC_Visa_case_7
+    case Terminal_Sends_AC_Visa_case_7
     solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
       case Card_Responds_To_ReadRecord_DDA
       solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -17338,7 +17339,7 @@ next
                                      <TTQ, $amount, country, currency, date, type, ~UN>, ATC, AC, IAD>,
                                     ~channelID
          ) ▶₀ #i )
-    case Terminal_Sends_GenerateAC_Visa_case_1
+    case Terminal_Sends_AC_Visa_case_1
     solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
       case Card_Responds_To_ReadRecord_DDA
       solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -17420,7 +17421,7 @@ next
       qed
     qed
   next
-    case Terminal_Sends_GenerateAC_Visa_case_2
+    case Terminal_Sends_AC_Visa_case_2
     solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
       case Card_Responds_To_ReadRecord_DDA
       solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -17502,7 +17503,7 @@ next
       qed
     qed
   next
-    case Terminal_Sends_GenerateAC_Visa_case_3
+    case Terminal_Sends_AC_Visa_case_3
     solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
       case Card_Responds_To_ReadRecord_DDA
       solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -17584,7 +17585,7 @@ next
       qed
     qed
   next
-    case Terminal_Sends_GenerateAC_Visa_case_4
+    case Terminal_Sends_AC_Visa_case_4
     solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
       case Card_Responds_To_ReadRecord_DDA
       solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -17638,7 +17639,7 @@ next
       qed
     qed
   next
-    case Terminal_Sends_GenerateAC_Visa_case_5
+    case Terminal_Sends_AC_Visa_case_5
     solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
       case Card_Responds_To_ReadRecord_DDA
       solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -17723,7 +17724,7 @@ next
       qed
     qed
   next
-    case Terminal_Sends_GenerateAC_Visa_case_6
+    case Terminal_Sends_AC_Visa_case_6
     solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
       case Card_Responds_To_ReadRecord_DDA
       solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -17777,7 +17778,7 @@ next
       qed
     qed
   next
-    case Terminal_Sends_GenerateAC_Visa_case_7
+    case Terminal_Sends_AC_Visa_case_7
     solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
       case Card_Responds_To_ReadRecord_DDA
       solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -17869,7 +17870,7 @@ next
                                      <TTQ, $amount, country, currency, date, type, ~UN>, ATC, AC, IAD>,
                                     ~channelID
          ) ▶₀ #i )
-    case Terminal_Sends_GenerateAC_Visa
+    case Terminal_Sends_AC_Visa
     solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
       case Card_Responds_To_ReadRecord_DDA
       solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -17986,7 +17987,7 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                                        <TTQ, $amount, country, currency, date, type, ~UN>, ATC, AC, IAD>,
                                       ~channelID
            ) ▶₀ #i )
-      case Terminal_Sends_GenerateAC_Visa_case_1
+      case Terminal_Sends_AC_Visa_case_1
       solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
         case Card_Responds_To_ReadRecord_DDA
         solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -18180,7 +18181,7 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
         qed
       qed
     next
-      case Terminal_Sends_GenerateAC_Visa_case_2
+      case Terminal_Sends_AC_Visa_case_2
       solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
         case Card_Responds_To_ReadRecord_DDA
         solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -18374,7 +18375,7 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
         qed
       qed
     next
-      case Terminal_Sends_GenerateAC_Visa_case_3
+      case Terminal_Sends_AC_Visa_case_3
       solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
         case Card_Responds_To_ReadRecord_DDA
         solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -18568,7 +18569,7 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
         qed
       qed
     next
-      case Terminal_Sends_GenerateAC_Visa_case_4
+      case Terminal_Sends_AC_Visa_case_4
       solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
         case Card_Responds_To_ReadRecord_DDA
         solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -18622,7 +18623,7 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
         qed
       qed
     next
-      case Terminal_Sends_GenerateAC_Visa_case_5
+      case Terminal_Sends_AC_Visa_case_5
       solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
         case Card_Responds_To_ReadRecord_DDA
         solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -18846,7 +18847,7 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
         qed
       qed
     next
-      case Terminal_Sends_GenerateAC_Visa_case_6
+      case Terminal_Sends_AC_Visa_case_6
       solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
         case Card_Responds_To_ReadRecord_DDA
         solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -18900,7 +18901,7 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
         qed
       qed
     next
-      case Terminal_Sends_GenerateAC_Visa_case_7
+      case Terminal_Sends_AC_Visa_case_7
       solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
         case Card_Responds_To_ReadRecord_DDA
         solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -19131,7 +19132,7 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                                        <TTQ, $amount, country, currency, date, type, ~UN>, ATC, AC, IAD>,
                                       ~channelID
            ) ▶₀ #i )
-      case Terminal_Sends_GenerateAC_Visa_case_1
+      case Terminal_Sends_AC_Visa_case_1
       solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
         case Card_Responds_To_ReadRecord_DDA
         solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -19325,7 +19326,7 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
         qed
       qed
     next
-      case Terminal_Sends_GenerateAC_Visa_case_2
+      case Terminal_Sends_AC_Visa_case_2
       solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
         case Card_Responds_To_ReadRecord_DDA
         solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -19519,7 +19520,7 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
         qed
       qed
     next
-      case Terminal_Sends_GenerateAC_Visa_case_3
+      case Terminal_Sends_AC_Visa_case_3
       solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
         case Card_Responds_To_ReadRecord_DDA
         solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -19713,7 +19714,7 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
         qed
       qed
     next
-      case Terminal_Sends_GenerateAC_Visa_case_4
+      case Terminal_Sends_AC_Visa_case_4
       solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
         case Card_Responds_To_ReadRecord_DDA
         solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -19767,7 +19768,7 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
         qed
       qed
     next
-      case Terminal_Sends_GenerateAC_Visa_case_5
+      case Terminal_Sends_AC_Visa_case_5
       solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
         case Card_Responds_To_ReadRecord_DDA
         solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -19991,7 +19992,7 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
         qed
       qed
     next
-      case Terminal_Sends_GenerateAC_Visa_case_6
+      case Terminal_Sends_AC_Visa_case_6
       solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
         case Card_Responds_To_ReadRecord_DDA
         solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -20045,7 +20046,7 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
         qed
       qed
     next
-      case Terminal_Sends_GenerateAC_Visa_case_7
+      case Terminal_Sends_AC_Visa_case_7
       solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
         case Card_Responds_To_ReadRecord_DDA
         solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -20276,7 +20277,7 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                                        <TTQ, $amount, country, currency, date, type, ~UN>, ATC, AC, IAD>,
                                       ~channelID
            ) ▶₀ #i )
-      case Terminal_Sends_GenerateAC_Visa
+      case Terminal_Sends_AC_Visa
       solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
         case Card_Responds_To_ReadRecord_DDA
         solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -20512,7 +20513,7 @@ next
                                          <TTQ, $amount, country, currency, date, type, ~UN>, ATC, AC, IAD>,
                                         ~channelID
              ) ▶₀ #i )
-        case Terminal_Sends_GenerateAC_Visa_case_1
+        case Terminal_Sends_AC_Visa_case_1
         solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
           case Card_Responds_To_ReadRecord_DDA
           solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -20706,7 +20707,7 @@ next
           qed
         qed
       next
-        case Terminal_Sends_GenerateAC_Visa_case_2
+        case Terminal_Sends_AC_Visa_case_2
         solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
           case Card_Responds_To_ReadRecord_DDA
           solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -20900,7 +20901,7 @@ next
           qed
         qed
       next
-        case Terminal_Sends_GenerateAC_Visa_case_3
+        case Terminal_Sends_AC_Visa_case_3
         solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
           case Card_Responds_To_ReadRecord_DDA
           solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -21094,7 +21095,7 @@ next
           qed
         qed
       next
-        case Terminal_Sends_GenerateAC_Visa_case_4
+        case Terminal_Sends_AC_Visa_case_4
         solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
           case Card_Responds_To_ReadRecord_DDA
           solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -21148,7 +21149,7 @@ next
           qed
         qed
       next
-        case Terminal_Sends_GenerateAC_Visa_case_5
+        case Terminal_Sends_AC_Visa_case_5
         solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
           case Card_Responds_To_ReadRecord_DDA
           solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -21372,7 +21373,7 @@ next
           qed
         qed
       next
-        case Terminal_Sends_GenerateAC_Visa_case_6
+        case Terminal_Sends_AC_Visa_case_6
         solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
           case Card_Responds_To_ReadRecord_DDA
           solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -21426,7 +21427,7 @@ next
           qed
         qed
       next
-        case Terminal_Sends_GenerateAC_Visa_case_7
+        case Terminal_Sends_AC_Visa_case_7
         solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
           case Card_Responds_To_ReadRecord_DDA
           solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -21657,7 +21658,7 @@ next
                                          <TTQ, $amount, country, currency, date, type, ~UN>, ATC, AC, IAD>,
                                         ~channelID
              ) ▶₀ #i )
-        case Terminal_Sends_GenerateAC_Visa_case_1
+        case Terminal_Sends_AC_Visa_case_1
         solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
           case Card_Responds_To_ReadRecord_DDA
           solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -21851,7 +21852,7 @@ next
           qed
         qed
       next
-        case Terminal_Sends_GenerateAC_Visa_case_2
+        case Terminal_Sends_AC_Visa_case_2
         solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
           case Card_Responds_To_ReadRecord_DDA
           solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -22045,7 +22046,7 @@ next
           qed
         qed
       next
-        case Terminal_Sends_GenerateAC_Visa_case_3
+        case Terminal_Sends_AC_Visa_case_3
         solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
           case Card_Responds_To_ReadRecord_DDA
           solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -22239,7 +22240,7 @@ next
           qed
         qed
       next
-        case Terminal_Sends_GenerateAC_Visa_case_4
+        case Terminal_Sends_AC_Visa_case_4
         solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
           case Card_Responds_To_ReadRecord_DDA
           solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -22293,7 +22294,7 @@ next
           qed
         qed
       next
-        case Terminal_Sends_GenerateAC_Visa_case_5
+        case Terminal_Sends_AC_Visa_case_5
         solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
           case Card_Responds_To_ReadRecord_DDA
           solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -22517,7 +22518,7 @@ next
           qed
         qed
       next
-        case Terminal_Sends_GenerateAC_Visa_case_6
+        case Terminal_Sends_AC_Visa_case_6
         solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
           case Card_Responds_To_ReadRecord_DDA
           solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -22571,7 +22572,7 @@ next
           qed
         qed
       next
-        case Terminal_Sends_GenerateAC_Visa_case_7
+        case Terminal_Sends_AC_Visa_case_7
         solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
           case Card_Responds_To_ReadRecord_DDA
           solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -22802,7 +22803,7 @@ next
                                          <TTQ, $amount, country, currency, date, type, ~UN>, ATC, AC, IAD>,
                                         ~channelID
              ) ▶₀ #i )
-        case Terminal_Sends_GenerateAC_Visa
+        case Terminal_Sends_AC_Visa
         solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
           case Card_Responds_To_ReadRecord_DDA
           solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -22855,7 +22856,7 @@ next
                                                      'IAD', 'TC'>,
                                                     ~channelID.1
                          ) ▶₀ #i2 )
-                    case Terminal_Sends_GenerateAC_Visa
+                    case Terminal_Sends_AC_Visa
                     by contradiction /* cyclic */
                   qed
                 qed
@@ -22917,7 +22918,7 @@ next
                                                      'IAD', 'TC'>,
                                                     ~channelID.1
                          ) ▶₀ #i2 )
-                    case Terminal_Sends_GenerateAC_Visa
+                    case Terminal_Sends_AC_Visa
                     by contradiction /* cyclic */
                   qed
                 qed
@@ -22988,7 +22989,7 @@ next
                                                      'IAD', 'TC'>,
                                                     ~channelID.1
                          ) ▶₀ #i2 )
-                    case Terminal_Sends_GenerateAC_Visa
+                    case Terminal_Sends_AC_Visa
                     by contradiction /* cyclic */
                   qed
                 qed
@@ -23050,7 +23051,7 @@ next
                                                      'IAD', 'TC'>,
                                                     ~channelID.1
                          ) ▶₀ #i2 )
-                    case Terminal_Sends_GenerateAC_Visa
+                    case Terminal_Sends_AC_Visa
                     by contradiction /* cyclic */
                   qed
                 qed
@@ -23121,7 +23122,7 @@ next
                                                      'IAD', 'TC'>,
                                                     ~channelID.1
                          ) ▶₀ #i2 )
-                    case Terminal_Sends_GenerateAC_Visa
+                    case Terminal_Sends_AC_Visa
                     by contradiction /* cyclic */
                   qed
                 qed
@@ -23183,7 +23184,7 @@ next
                                                      'IAD', 'TC'>,
                                                     ~channelID.1
                          ) ▶₀ #i2 )
-                    case Terminal_Sends_GenerateAC_Visa
+                    case Terminal_Sends_AC_Visa
                     by contradiction /* cyclic */
                   qed
                 qed
@@ -23254,7 +23255,7 @@ next
                                                      'IAD', 'TC'>,
                                                     ~channelID.1
                          ) ▶₀ #i2 )
-                    case Terminal_Sends_GenerateAC_Visa
+                    case Terminal_Sends_AC_Visa
                     by contradiction /* cyclic */
                   qed
                 qed
@@ -23316,7 +23317,7 @@ next
                                                      'IAD', 'TC'>,
                                                     ~channelID.1
                          ) ▶₀ #i2 )
-                    case Terminal_Sends_GenerateAC_Visa
+                    case Terminal_Sends_AC_Visa
                     by contradiction /* cyclic */
                   qed
                 qed
@@ -23387,7 +23388,7 @@ next
                                                      'IAD', 'TC'>,
                                                     ~channelID.1
                          ) ▶₀ #i2 )
-                    case Terminal_Sends_GenerateAC_Visa
+                    case Terminal_Sends_AC_Visa
                     by contradiction /* cyclic */
                   qed
                 qed
@@ -23449,7 +23450,7 @@ next
                                                      'IAD', 'TC'>,
                                                     ~channelID.1
                          ) ▶₀ #i2 )
-                    case Terminal_Sends_GenerateAC_Visa
+                    case Terminal_Sends_AC_Visa
                     by contradiction /* cyclic */
                   qed
                 qed
@@ -23486,7 +23487,7 @@ next
                                          <TTQ, $amount, country, currency, date, type, ~UN>, ATC, AC, IAD>,
                                         ~channelID
              ) ▶₀ #i )
-        case Terminal_Sends_GenerateAC_Visa_case_1
+        case Terminal_Sends_AC_Visa_case_1
         solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
           case Card_Responds_To_ReadRecord_DDA
           solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -23680,7 +23681,7 @@ next
           qed
         qed
       next
-        case Terminal_Sends_GenerateAC_Visa_case_2
+        case Terminal_Sends_AC_Visa_case_2
         solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
           case Card_Responds_To_ReadRecord_DDA
           solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -23874,7 +23875,7 @@ next
           qed
         qed
       next
-        case Terminal_Sends_GenerateAC_Visa_case_3
+        case Terminal_Sends_AC_Visa_case_3
         solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
           case Card_Responds_To_ReadRecord_DDA
           solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -24068,7 +24069,7 @@ next
           qed
         qed
       next
-        case Terminal_Sends_GenerateAC_Visa_case_4
+        case Terminal_Sends_AC_Visa_case_4
         solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
           case Card_Responds_To_ReadRecord_DDA
           solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -24122,7 +24123,7 @@ next
           qed
         qed
       next
-        case Terminal_Sends_GenerateAC_Visa_case_5
+        case Terminal_Sends_AC_Visa_case_5
         solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
           case Card_Responds_To_ReadRecord_DDA
           solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -24346,7 +24347,7 @@ next
           qed
         qed
       next
-        case Terminal_Sends_GenerateAC_Visa_case_6
+        case Terminal_Sends_AC_Visa_case_6
         solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
           case Card_Responds_To_ReadRecord_DDA
           solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -24400,7 +24401,7 @@ next
           qed
         qed
       next
-        case Terminal_Sends_GenerateAC_Visa_case_7
+        case Terminal_Sends_AC_Visa_case_7
         solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
           case Card_Responds_To_ReadRecord_DDA
           solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -24631,7 +24632,7 @@ next
                                          <TTQ, $amount, country, currency, date, type, ~UN>, ATC, AC, IAD>,
                                         ~channelID
              ) ▶₀ #i )
-        case Terminal_Sends_GenerateAC_Visa_case_1
+        case Terminal_Sends_AC_Visa_case_1
         solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
           case Card_Responds_To_ReadRecord_DDA
           solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -24825,7 +24826,7 @@ next
           qed
         qed
       next
-        case Terminal_Sends_GenerateAC_Visa_case_2
+        case Terminal_Sends_AC_Visa_case_2
         solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
           case Card_Responds_To_ReadRecord_DDA
           solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -25019,7 +25020,7 @@ next
           qed
         qed
       next
-        case Terminal_Sends_GenerateAC_Visa_case_3
+        case Terminal_Sends_AC_Visa_case_3
         solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
           case Card_Responds_To_ReadRecord_DDA
           solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -25213,7 +25214,7 @@ next
           qed
         qed
       next
-        case Terminal_Sends_GenerateAC_Visa_case_4
+        case Terminal_Sends_AC_Visa_case_4
         solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
           case Card_Responds_To_ReadRecord_DDA
           solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -25267,7 +25268,7 @@ next
           qed
         qed
       next
-        case Terminal_Sends_GenerateAC_Visa_case_5
+        case Terminal_Sends_AC_Visa_case_5
         solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
           case Card_Responds_To_ReadRecord_DDA
           solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -25491,7 +25492,7 @@ next
           qed
         qed
       next
-        case Terminal_Sends_GenerateAC_Visa_case_6
+        case Terminal_Sends_AC_Visa_case_6
         solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
           case Card_Responds_To_ReadRecord_DDA
           solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -25545,7 +25546,7 @@ next
           qed
         qed
       next
-        case Terminal_Sends_GenerateAC_Visa_case_7
+        case Terminal_Sends_AC_Visa_case_7
         solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
           case Card_Responds_To_ReadRecord_DDA
           solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -25776,7 +25777,7 @@ next
                                          <TTQ, $amount, country, currency, date, type, ~UN>, ATC, AC, IAD>,
                                         ~channelID
              ) ▶₀ #i )
-        case Terminal_Sends_GenerateAC_Visa
+        case Terminal_Sends_AC_Visa
         solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.19 )
           case Card_Responds_To_ReadRecord_DDA
           solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
@@ -25829,7 +25830,7 @@ next
                                                      'IAD', 'TC'>,
                                                     ~channelID.1
                          ) ▶₀ #i2 )
-                    case Terminal_Sends_GenerateAC_Visa
+                    case Terminal_Sends_AC_Visa
                     by contradiction /* cyclic */
                   qed
                 qed
@@ -25891,7 +25892,7 @@ next
                                                      'IAD', 'TC'>,
                                                     ~channelID.1
                          ) ▶₀ #i2 )
-                    case Terminal_Sends_GenerateAC_Visa
+                    case Terminal_Sends_AC_Visa
                     by contradiction /* cyclic */
                   qed
                 qed
@@ -25962,7 +25963,7 @@ next
                                                      'IAD', 'TC'>,
                                                     ~channelID.1
                          ) ▶₀ #i2 )
-                    case Terminal_Sends_GenerateAC_Visa
+                    case Terminal_Sends_AC_Visa
                     by contradiction /* cyclic */
                   qed
                 qed
@@ -26024,7 +26025,7 @@ next
                                                      'IAD', 'TC'>,
                                                     ~channelID.1
                          ) ▶₀ #i2 )
-                    case Terminal_Sends_GenerateAC_Visa
+                    case Terminal_Sends_AC_Visa
                     by contradiction /* cyclic */
                   qed
                 qed
@@ -26095,7 +26096,7 @@ next
                                                      'IAD', 'TC'>,
                                                     ~channelID.1
                          ) ▶₀ #i2 )
-                    case Terminal_Sends_GenerateAC_Visa
+                    case Terminal_Sends_AC_Visa
                     by contradiction /* cyclic */
                   qed
                 qed
@@ -26157,7 +26158,7 @@ next
                                                      'IAD', 'TC'>,
                                                     ~channelID.1
                          ) ▶₀ #i2 )
-                    case Terminal_Sends_GenerateAC_Visa
+                    case Terminal_Sends_AC_Visa
                     by contradiction /* cyclic */
                   qed
                 qed
@@ -26228,7 +26229,7 @@ next
                                                      'IAD', 'TC'>,
                                                     ~channelID.1
                          ) ▶₀ #i2 )
-                    case Terminal_Sends_GenerateAC_Visa
+                    case Terminal_Sends_AC_Visa
                     by contradiction /* cyclic */
                   qed
                 qed
@@ -26290,7 +26291,7 @@ next
                                                      'IAD', 'TC'>,
                                                     ~channelID.1
                          ) ▶₀ #i2 )
-                    case Terminal_Sends_GenerateAC_Visa
+                    case Terminal_Sends_AC_Visa
                     by contradiction /* cyclic */
                   qed
                 qed
@@ -26361,7 +26362,7 @@ next
                                                      'IAD', 'TC'>,
                                                     ~channelID.1
                          ) ▶₀ #i2 )
-                    case Terminal_Sends_GenerateAC_Visa
+                    case Terminal_Sends_AC_Visa
                     by contradiction /* cyclic */
                   qed
                 qed
@@ -26423,7 +26424,7 @@ next
                                                      'IAD', 'TC'>,
                                                     ~channelID.1
                          ) ▶₀ #i2 )
-                    case Terminal_Sends_GenerateAC_Visa
+                    case Terminal_Sends_AC_Visa
                     by contradiction /* cyclic */
                   qed
                 qed
@@ -28820,7 +28821,5 @@ analyzed: models-n-proofs/contactless/Visa_DDA_Low_Fix.spthy
   secrecy_PAN (all-traces): falsified - found trace (7 steps)
 
 ==============================================================================
-
-real	20m2.665s
-user	114m50.066s
-sys	15m33.335s
+5169.20user 3376.54system 18:54.10elapsed 753%CPU (0avgtext+0avgdata 1489940maxresident)k
+0inputs+49600outputs (0major+25553033minor)pagefaults 0swaps
