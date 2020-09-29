@@ -934,12 +934,6 @@ lemma executable:
 //============== Bank accepts ===========//
 lemma bank_accepts:
   "All t #i.
-    /*if(Fix)/* //remove the one-session restriction for Visa Fix
-    /*if(Visa)/*if(DDA)/*if(Low)
-    //it fails for this configuration, so it is OK to have this restriction
-    (All #a #b. OneCard()@a & OneCard()@b ==> #a = #b) &
-    endif(Low)*/endif(DDA)*/endif(Visa)*/
-    */endif(Fix)*/
     TerminalAccepts(t)@i      
    ==>
     not (Ex #j. BankDeclines(t)@j) |
