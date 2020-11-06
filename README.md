@@ -1,6 +1,8 @@
 # EMVerify
 
-This is a [Tamarin](https://tamarin-prover.github.io/)-based security analysis of the EMV standard and is the complementary material for our IEEE S&P 2021 paper *The EMV Standard: Break, Fix, Verify*. Further information on this work is available at [https://emvrace.github.io](https://emvrace.github.io/).
+This is a [Tamarin](https://tamarin-prover.github.io/) model of the EMV standard and is the complementary material for our IEEE S&P 2021 paper **The EMV Standard: Break, Fix, Verify**. Details on this work available at https://emvrace.github.io.
+
+This repository has been updated **after** the production of the final version of our paper, including the re-execution of the full-scale analysis with newer Tamarin versions. Therefore, some security-irrelevant data about the models and proofs (e.g. analysis runtime) reported here might differ from that of the paper. The actual security analysis results do **not** change.
 
 ## Folder layout
 
@@ -34,17 +36,17 @@ The full set of variables is listed next:
 	* `DDA`,
 	* `CDA`(default), and
 	* `EMV`.
-* `CVM`: the cardholder verification method user/supported. Valid instances are:
+* `CVM`: the Cardholder Verification Method (CVM) user/supported. Valid instances are:
 	* `NoPIN`,
 	* `PlainPIN`,
 	* `EncPIN`, and
 	* `OnlinePIN`(default).
-* `value`: the value of the transaction (i.e., whether it is above the CVM-required limit or not). Valid instances are:
+* `value`: the value of the transaction amount. Valid instances are:
 	* `Low`(default), and
 	* `High`.
 * `oracle`: references the oracle to be used to assist the proofs.
-* `decomment`: if set to `yes`, the auto-generated models will have no comments.
-* `fix`: if defined (with any value), the input to the SDAD signature in the Visa contactless protocol becomes ⟨NC, CID, AC, PDOL, ATC, CTQ, UN, IAD, AIP⟩. This is the proposed fix that defends against modification of the Application Cryptogram in fDDA transactions.
+* `decomment`: if set to `Yes`, the auto-generated models will have no comments.
+* `fix`: if defined (with any value), the input to the Signed Dynamic Authentication Data (SDAD) in the Visa contactless protocol becomes ⟨NC, CID, AC, PDOL, ATC, CTQ, UN, IAD, AIP⟩. This is the proposed fix that defends against modification of the Application Cryptogram (AC) in fDDA transactions.
 
 For example:
 ```shell
@@ -56,25 +58,23 @@ generates the target model `Mastercard_CDA_OnlinePIN_High.spthy` from the generi
 
 We have split our analysis of the **40** target models into three groups:
 
-1. `Mastercard_<auth>_<CVM>_<value>`: used for the security analysis of accepted, contactless transactions, which, in the committing agent's perspective:
-	* used Mastercard's kernel/protocol,
-	* used the ODA method `<auth>`,
-	* the card's highest CVM supported was `<CVM>`,
-	* the transaction amount was either below (`Low`) or above (`High`) the CVM-required limit, determined by `<value>`.
-2. `Visa_<auth>_<value>`: used for the security analysis of accepted, contactless transactions, which, in the committing agent's perspective:
-	* used Visa's kernel/protocol,
-	* used the processing mode `<auth>`,
-	* the transaction amount was either below (`Low`) or above (`High`) the CVM-required limit, determined by `<value>`.
-3. `Contact_<auth>_<CVM>_<authz>`: used for the security analysis of accepted, contact transactions, which, in the committing agent's perspective:
-	* used the ODA method `<auth>`,
-	* used the CVM `<CVM>`, and
-	* were authorized offline or online, determined by `<authz>`.
+1. `Mastercard_<auth>_<CVM>_<value>`: used for the analysis of EMV contactless transactions where, from the committing agent's perspective:
+	* the card was a Mastercard,
+	* the card's AIP indicated support for the ODA method `<auth>`,
+	* if the committing agent was the terminal, then the card's highest CVM supported was `<CVM>`,
+	* if `<value>` is `Low` (respectively `High`), then the transaction amount was below (respectively above) the CVM-required limit.
+2. `Visa_<auth>_<value>`: used for the analysis of accepted contactless transactions where, from the committing agent's perspective:
+	* the card was a Visa,
+	* the card's AIP indicated support for the processing mode `<auth>`,
+	* if `<value>` is `Low` (respectively `High`), then the transaction amount was below (respectively above) the CVM-required limit.
+3. `Contact_<auth>_<CVM>_<authz>`: used for the analysis of EMV contact transactions where, from the committing agent's perspective:
+	* the card's AIP indicated support for the ODA method `<auth>`,
+	* the CVM used was `<CVM>`, and
+	* if `<authz>` is `Offline` (respectively `Online`), then the authorization was authorized offline (respectively online).
 
 The auto-generated models allow for any type of transactions to take place, the properties are verified only for **accepted transactions that follow the selected target configuration**. All target models are the same except for the rules that produce the `Commit` facts. Such rules do not model any interaction with the adversary, the network, or any other agent, i.e., they are simply rules to produce the `Commit` facts.
 
-<!--The analysis of the EMV contactless protocol was performed using the Tamarin release 1.4.1 on a MacBook Pro laptop running macOS 10.15.4 with a Quad-Core Intel Core i7 @ 2.5 GHz CPU and 16 GB of RAM.-->
-
-All proofs were constructed using Tamarin version 1.5.1 on a computing server running Ubuntu 16.04.3 with two Intel(R) Xeon(R) E5-2650 v4 @ 2.20GHz CPUs (with 12 cores each) and 256GB of RAM. Here we used 10 threads and at most 20GB of RAM per target model.
+All proofs were constructed using Tamarin version 1.7.0 (git revision: 2884fce8c40e3e5bdb87526214652696e089326d, branch: develop) on a computing server running Ubuntu 16.04.3 with two Intel(R) Xeon(R) E5-2650 v4 @ 2.20GHz CPUs (with 12 cores each) and 256GB of RAM. Here we used 10 threads and at most 20GB of RAM per target model.
 
 ## Auto-generation of target models
 
@@ -94,7 +94,7 @@ rule Terminal_Commits_ARQC_Visa:
       !Value($amount, value),
       Recv($Bank, $Terminal, <~channelID, 'Visa', '2'>, <'ARC', ARPC>) ]
   --[ TerminalAccepts(transaction),
-      Commit(nc, ~PAN, <'Card', 'Terminal', transaction>),
+      Commit('Terminal', ~PAN, <'Card', 'Terminal', transaction>),
       Commit($Terminal, $Bank, <'Bank', 'Terminal', transaction>),
       Honest($CA), Honest($Bank), Honest($Terminal), Honest(~PAN)]->
     [ ]
@@ -113,7 +113,7 @@ rule Terminal_Commits_ARQC_Visa:
       !Value($amount, value),
       Recv($Bank, $Terminal, <~channelID, 'Visa', '2'>, <'ARC', ARPC>) ]
   --[ TerminalAccepts(transaction),
-      Commit(nc, ~PAN, <'Card', 'Terminal', transaction>),
+      Commit('Terminal', ~PAN, <'Card', 'Terminal', transaction>),
       Commit($Terminal, $Bank, <'Bank', 'Terminal', transaction>),
       Honest($CA), Honest($Bank), Honest($Terminal), Honest(~PAN)]->
     [ ]
@@ -213,8 +213,8 @@ make generic=Contactless kernel=Visa auth=DDA value=Low fix=Yes
 * Different versions of GNU use different regex syntax. Thus, you might need to tweak the regexes in the `sed` commands of the Makefile.
 * The authentication properties we use are *non-injective agreement* and *injective agreement* (see their Tamarin specification [here](https://tamarin-prover.github.io/manual/book/006_property-specification.html#authentication)). For each model, if non-injective agreement fails, we do not analyze injective agreement as it fails too given that the latter property is stronger than the former.
 
-## Authors
+## Team
 
 * [David Basin](https://people.inf.ethz.ch/basin/)
 * [Ralf Sasse](https://people.inf.ethz.ch/rsasse/)
-* [Jorge Toro](https://jorgetp.github.io) (maintainer of this repository)
+* [Jorge Toro](https://jorgetp.github.io) (maintainer of this repo)
