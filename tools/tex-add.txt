@@ -1,0 +1,93 @@
+#Contactless
+
+Visa_EMV_Low auth_to_terminal_minimal $^{(1)}$
+Visa_EMV_Low auth_to_bank_minimal $^{(1)}$
+Visa_EMV_High auth_to_terminal_minimal $^{(1)}$
+Visa_EMV_High auth_to_bank_minimal $^{(1)}$
+
+Visa_DDA_Low bank_accepts $^{(2)}$
+Visa_DDA_Low auth_to_terminal_minimal $^{(2)}$
+
+Mastercard_SDA_OnlinePIN_Low bank_accepts $^{(2)}$
+Mastercard_SDA_NoPIN_Low bank_accepts $^{(2)}$
+Mastercard_DDA_OnlinePIN_Low bank_accepts $^{(2)}$
+Mastercard_DDA_NoPIN_Low bank_accepts $^{(2)}$
+
+Mastercard_SDA_OnlinePIN_Low auth_to_terminal_minimal $^{(2)}$
+Mastercard_SDA_NoPIN_Low auth_to_terminal_minimal $^{(2)}$
+Mastercard_DDA_OnlinePIN_Low auth_to_terminal_minimal $^{(2)}$
+Mastercard_DDA_NoPIN_Low auth_to_terminal_minimal $^{(2)}$
+
+Mastercard_SDA_NoPIN_High executable $^{(3)}$
+Mastercard_DDA_NoPIN_High executable $^{(3)}$
+Mastercard_CDA_NoPIN_High executable $^{(3)}$
+
+#Contact
+
+#SDA
+Contact_SDA_NoPIN_Offline bank_accepts $^{(2)}$
+Contact_SDA_PlainPIN_Offline bank_accepts $^{(2)}$
+#Contact_SDA_EncPIN_Offline bank_accepts $^{(2)}$
+#Contact_SDA_OnlinePIN_Offline bank_accepts $^{(2)}$
+Contact_SDA_NoPIN_Online bank_accepts $^{(2)}$
+Contact_SDA_PlainPIN_Online bank_accepts $^{(2)}$
+#Contact_SDA_EncPIN_Online bank_accepts $^{(2)}$
+Contact_SDA_OnlinePIN_Online bank_accepts $^{(2)}$
+
+Contact_SDA_NoPIN_Offline auth_to_terminal_minimal $^{(1,2)}$
+Contact_SDA_PlainPIN_Offline auth_to_terminal_minimal $^{(1,2)}$
+#Contact_SDA_EncPIN_Offline auth_to_terminal_minimal $^{(1,2)}$
+#Contact_SDA_OnlinePIN_Offline auth_to_terminal_minimal $^{(1,2)}$
+Contact_SDA_NoPIN_Online auth_to_terminal_minimal $^{(1,2)}$
+Contact_SDA_PlainPIN_Online auth_to_terminal_minimal $^{(1,2)}$
+#Contact_SDA_EncPIN_Online auth_to_terminal_minimal $^{(1,2)}$
+Contact_SDA_OnlinePIN_Online auth_to_terminal_minimal $^{(1,2)}$
+
+Contact_SDA_NoPIN_Offline auth_to_bank_minimal $^{(1)}$
+Contact_SDA_PlainPIN_Offline auth_to_bank_minimal $^{(1)}$
+#Contact_SDA_EncPIN_Offline auth_to_bank_minimal $^{(1)}$
+#Contact_SDA_OnlinePIN_Offline auth_to_bank_minimal $^{(1)}$
+Contact_SDA_NoPIN_Online auth_to_bank_minimal $^{(1)}$
+Contact_SDA_PlainPIN_Online auth_to_bank_minimal $^{(1)}$
+#Contact_SDA_EncPIN_Online auth_to_bank_minimal $^{(1)}$
+Contact_SDA_OnlinePIN_Online auth_to_bank_minimal $^{(1)}$
+
+#DDA
+Contact_DDA_NoPIN_Offline bank_accepts $^{(2)}$
+Contact_DDA_PlainPIN_Offline bank_accepts $^{(2)}$
+Contact_DDA_EncPIN_Offline bank_accepts $^{(2)}$
+#Contact_DDA_OnlinePIN_Offline bank_accepts $^{(2)}$
+Contact_DDA_NoPIN_Online bank_accepts $^{(2)}$
+Contact_DDA_PlainPIN_Online bank_accepts $^{(2)}$
+Contact_DDA_EncPIN_Online bank_accepts $^{(2)}$
+Contact_DDA_OnlinePIN_Online bank_accepts $^{(2)}$
+
+Contact_DDA_NoPIN_Offline auth_to_terminal_minimal $^{(2)}$
+Contact_DDA_PlainPIN_Offline auth_to_terminal_minimal $^{(1,2)}$
+Contact_DDA_EncPIN_Offline auth_to_terminal_minimal $^{(1,2)}$
+#Contact_DDA_OnlinePIN_Offline auth_to_terminal_minimal $^{(1,2)}$
+Contact_DDA_NoPIN_Online auth_to_terminal_minimal $^{(2)}$
+Contact_DDA_PlainPIN_Online auth_to_terminal_minimal $^{(1,2)}$
+Contact_DDA_EncPIN_Online auth_to_terminal_minimal $^{(1,2)}$
+Contact_DDA_OnlinePIN_Online auth_to_terminal_minimal $^{(2)}$
+
+Contact_DDA_PlainPIN_Offline auth_to_bank_minimal $^{(1)}$
+Contact_DDA_EncPIN_Offline auth_to_bank_minimal $^{(1)}$
+#Contact_DDA_OnlinePIN_Offline auth_to_bank_minimal $^{(1)}$
+Contact_DDA_PlainPIN_Online auth_to_bank_minimal $^{(1)}$
+Contact_DDA_EncPIN_Online auth_to_bank_minimal $^{(1)}$
+
+#CDA
+Contact_CDA_PlainPIN_Offline auth_to_terminal_minimal $^{(1)}$
+Contact_CDA_EncPIN_Offline auth_to_terminal_minimal $^{(1)}$
+Contact_CDA_PlainPIN_Online auth_to_terminal_minimal $^{(1)}$
+Contact_CDA_EncPIN_Online auth_to_terminal_minimal $^{(1)}$
+
+Contact_CDA_PlainPIN_Offline auth_to_bank_minimal $^{(1)}$
+Contact_CDA_EncPIN_Offline auth_to_bank_minimal $^{(1)}$
+Contact_CDA_PlainPIN_Online auth_to_bank_minimal $^{(1)}$
+Contact_CDA_EncPIN_Online auth_to_bank_minimal $^{(1)}$
+
+
+
+

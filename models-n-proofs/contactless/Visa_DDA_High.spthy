@@ -100,7 +100,6 @@ rule Create_Card:
       Honest($CA), Honest($Bank), Honest(~PAN) ]->
     [ !AIP(~PAN, AIP),
       !AID(~PAN, 'Mastercard'),
-      !SupportedCVM(~PAN, CVM),
       !Shk(~PAN, ~MK),
       !IssuingBank(~PAN, $Bank),
       Set_Records(~PAN, ~expDate, $CA, certBank, SSAD, CVM),
@@ -167,7 +166,7 @@ rule Card_Responds_To_ReadRecord_NotDDA:
       In(<'READ_RECORD', 'AFL'>) ]
   --[ NEq(fst(AIP), 'DDA') ]->
     [ Out(records),
-      Card_Ready_For_Transaction(~PAN, PDOL, ATC) ]
+      Card_Ready_For_Cryptogram(~PAN, PDOL, ATC) ]
 
 rule Card_Responds_To_ReadRecord_DDA:
     [ Card_Responded_To_GPO(~PAN, PDOL, ATC),
@@ -252,7 +251,7 @@ rule Card_Responds_To_InternalAuthenticate:
       In( <'INTERNAL_AUTHENTICATE', DDOL> ) ]
   -->
     [ Out( <~nc, sign{'05', ~nc, DDOL}~privkCard> ),
-      Card_Ready_For_Transaction(~PAN, PDOL, ATC) ]
+      Card_Ready_For_Cryptogram(~PAN, PDOL, ATC) ]
 
 rule Terminal_Receives_InternalAuthenticate_Response:
     let PDOL = <$amount, country, currency, date, type, ~UN>
@@ -272,7 +271,7 @@ rule Terminal_Processes_CVM_NoPIN:
         AIP, pubkBank, pubkCard, CVM),
       !Value($amount, 'Low') ]
   -->
-    [ Terminal_Ready_For_Transaction($Terminal, ~PAN, $Bank, $CA, PDOL,
+    [ Terminal_Ready_For_Cryptogram($Terminal, ~PAN, $Bank, $CA, PDOL,
         AIP, pubkBank, pubkCard, 'NoPIN', 'Null', CVM) ]
 
 rule Terminal_Processes_CVM_OnlinePIN:
@@ -284,7 +283,7 @@ rule Terminal_Processes_CVM_OnlinePIN:
       !Entered_PIN(~PAN, PIN),
       !Value($amount, 'High') ]
   -->
-    [ Terminal_Ready_For_Transaction($Terminal, ~PAN, $Bank, $CA,
+    [ Terminal_Ready_For_Cryptogram($Terminal, ~PAN, $Bank, $CA,
         PDOL, AIP, pubkBank, pubkCard, 'OnlinePIN', encPIN, 'OnlinePIN') ]
 
 rule Terminal_Processes_CVM_ODCVM:
@@ -295,14 +294,14 @@ rule Terminal_Processes_CVM_ODCVM:
         AIP, pubkBank, pubkCard, CVM),
       !Value($amount, 'High') ]
   -->
-    [ Terminal_Ready_For_Transaction($Terminal, ~PAN, $Bank, $CA, PDOL,
+    [ Terminal_Ready_For_Cryptogram($Terminal, ~PAN, $Bank, $CA, PDOL,
         AIP, pubkBank, pubkCard, 'ODCVM', 'Null', CVM) ]
 
 rule Terminal_Sends_GenerateAC_NoCDA:
     let CDOL1 = <'TVR', CVM, 'HHMMSS'>
         X = <PDOL, CDOL1>
     in
-    [ Terminal_Ready_For_Transaction($Terminal, ~PAN, $Bank, $CA, PDOL,
+    [ Terminal_Ready_For_Cryptogram($Terminal, ~PAN, $Bank, $CA, PDOL,
         AIP, pubkBank, pubkCard, CVM, encPIN, supportedCVM),
       In(acType) ]
   --[ NEq(fst(AIP), 'CDA') ]->
@@ -315,7 +314,7 @@ rule Terminal_Sends_GenerateAC_CDA:
         X = <PDOL, CDOL1>
         AIP = <'CDA', furtherData>
     in
-    [ Terminal_Ready_For_Transaction($Terminal, ~PAN, $Bank, $CA,
+    [ Terminal_Ready_For_Cryptogram($Terminal, ~PAN, $Bank, $CA,
         PDOL, AIP, pubkBank, pubkCard, CVM, encPIN, supportedCVM),
       In(acType) ]
   -->
@@ -330,12 +329,13 @@ rule Card_Responds_To_GenerateAC_NoCDA:
         AC = MAC(f(~MK, ATC), X, AIP, ATC, IAD)
         transaction = <~PAN, AIP, CVM, X, ATC, AC, IAD>
     in
-    [ Card_Ready_For_Transaction(~PAN, PDOL, ATC),
+    [ Card_Ready_For_Cryptogram(~PAN, PDOL, ATC),
       !AIP(~PAN, AIP),
       !Shk(~PAN, ~MK),
       !IssuingBank(~PAN, $Bank),
       In(< 'GENERATE_AC', CID, 'NoCDA', CDOL1 >) ]
-  --[ Running(~PAN, 'Null', <'Card', 'Terminal', transaction>),
+  --[
+      Running(~PAN, 'Terminal', <'Card', 'Terminal', transaction>),
       Running(~PAN, $Bank, <'Card', 'Bank', transaction>) ]->
     [ Out(<CID, ATC, AC, IAD>) ]
 
@@ -350,15 +350,14 @@ rule Card_Responds_To_GenerateAC_CDA:
         SDAD = sign{'05', ~nc, CID, AC, T, UN}~privkCard
         transaction = <~PAN, AIP, CVM, X, ATC, AC, IAD>
     in
-    [ Card_Ready_For_Transaction(~PAN, PDOL, ATC),
+    [ Card_Ready_For_Cryptogram(~PAN, PDOL, ATC),
       !LtkCard(~PAN, ~privkCard),
       !AIP(~PAN, AIP),
       !Shk(~PAN, ~MK),
       !IssuingBank(~PAN, $Bank),
       Fr(~nc),
       In(< 'GENERATE_AC', CID, 'CDA', CDOL1 >) ]
-  --[
-      Running(~PAN, ~nc, <'Card', 'Terminal', transaction>),
+  --[ Running(~PAN, 'Terminal', <'Card', 'Terminal', transaction>),
       Running(~PAN, $Bank, <'Card', 'Bank', transaction>) ]->
     [ Out(<CID, ATC, AC, <~nc, SDAD>, IAD>) ]
 
@@ -515,7 +514,7 @@ rule Card_Responds_To_GPO_EMV_Visa:
   --[ OneCard(),
       Once(<~PAN, ATC, 'Card'>),
       NEq(CVM, 'CDCVM'),
-      Running(~PAN, 'Null', <'Card', 'Terminal', transaction>),
+      Running(~PAN, 'Terminal', <'Card', 'Terminal', transaction>),
       Running(~PAN, $Bank, <'Card', 'Bank', transaction>) ]->
     [ Out(< AIP, 'AFL', track2ED, IAD, AC, CID, ATC, CTQ >),
       Card_Responded_To_GPO_Visa(~PAN, AIP, PDOL, ATC, AC, CID, CTQ, IAD) ]
@@ -557,7 +556,7 @@ rule Card_Responds_To_ReadRecord_EMV_Visa:
     [ Card_Responded_To_GPO_Visa(~PAN, AIP, PDOL, ATC, AC, CID, CTQ, IAD),
       !Records_Visa(~PAN, ~expDate, $CA, certBank, certCard),
       In(< 'READ_RECORD', 'AFL' >) ]
-  --[  ]->
+  -->
     [ Out(<~PAN, ~expDate>) ]
 
 rule Card_Responds_To_ReadRecord_DDA_Visa:
@@ -574,7 +573,7 @@ rule Card_Responds_To_ReadRecord_DDA_Visa:
       !SDADFormat(format, CID),
       !IssuingBank(~PAN, $Bank),
       In(< 'READ_RECORD', 'AFL' >) ]
-  --[ Running(~PAN, ~nc, <'Card', 'Terminal', transaction>),
+  --[ Running(~PAN, 'Terminal', <'Card', 'Terminal', transaction>),
       Running(~PAN, $Bank, <'Card', 'Bank', transaction>) ]->
     [ Out(< ~PAN, ~expDate, $CA, certBank, certCard, ~nc, CTQ, SDAD >) ]
 
@@ -664,7 +663,7 @@ rule Terminal_Commits_TC_Visa:
         nc, 'TC', transaction, ~channelID),
       !Value($amount, value) ]
   --[ TerminalAccepts(transaction),
-      Commit(nc, ~PAN, <'Card', 'Terminal', transaction>),
+      Commit('Terminal', ~PAN, <'Card', 'Terminal', transaction>),
       Honest($CA), Honest($Bank), Honest($Terminal), Honest(~PAN) ]->
     [ ]
 
@@ -737,7 +736,7 @@ rule Terminal_Commits_ARQC_Visa:
       !Value($amount, value),
       Recv($Bank, $Terminal, <~channelID, 'Visa', '2'>, <'ARC', ARPC>) ]
   --[ TerminalAccepts(transaction),
-      Commit(nc, ~PAN, <'Card', 'Terminal', transaction>),
+      Commit('Terminal', ~PAN, <'Card', 'Terminal', transaction>),
       Commit($Terminal, $Bank, <'Bank', 'Terminal', transaction>),
       Honest($CA), Honest($Bank), Honest($Terminal), Honest(~PAN)]->
     [ ]
@@ -761,10 +760,10 @@ restriction compatibility:
 
 lemma executable:
   exists-trace
-  "Ex Bank PAN nc t #i #j #k #l.
+  "Ex Bank PAN t #i #j #k #l.
     i < j &
-    Running(PAN, nc, <'Card', 'Terminal', t>)@i &
-    Commit(nc, PAN, <'Card', 'Terminal', t>)@j &
+    Running(PAN, 'Terminal', <'Card', 'Terminal', t>)@i &
+    Commit('Terminal', PAN, <'Card', 'Terminal', t>)@j &
     k < l &
     Running(PAN, Bank, <'Card', 'Bank', t>)@k &
     Commit(Bank, PAN, <'Card', 'Bank', t>)@l &

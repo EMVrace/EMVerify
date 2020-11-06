@@ -117,8 +117,7 @@ rule (modulo E) Create_Card:
   ]->
    [
    !AIP( ~PAN, <auth, $furtherData> ), !AID( ~PAN, 'Mastercard' ),
-   !SupportedCVM( ~PAN, CVM ), !Shk( ~PAN, ~MK ),
-   !IssuingBank( ~PAN, $Bank ),
+   !Shk( ~PAN, ~MK ), !IssuingBank( ~PAN, $Bank ),
    Set_Records( ~PAN, ~expDate, $CA, certBank,
                 sign(<'03', ~PAN, ~expDate, auth, $furtherData>, ~privkBank), CVM
    ),
@@ -225,7 +224,7 @@ rule (modulo E) Card_Responds_To_ReadRecord_NotDDA:
    !Records( ~PAN, records ), In( <'READ_RECORD', 'AFL'> )
    ]
   --[ NEq( fst(AIP), 'DDA' ) ]->
-   [ Out( records ), Card_Ready_For_Transaction( ~PAN, PDOL, ATC ) ]
+   [ Out( records ), Card_Ready_For_Cryptogram( ~PAN, PDOL, ATC ) ]
 
   /*
   rule (modulo AC) Card_Responds_To_ReadRecord_NotDDA:
@@ -234,7 +233,7 @@ rule (modulo E) Card_Responds_To_ReadRecord_NotDDA:
      !Records( ~PAN, records ), In( <'READ_RECORD', 'AFL'> )
      ]
     --[ NEq( z, 'DDA' ) ]->
-     [ Out( records ), Card_Ready_For_Transaction( ~PAN, PDOL, ATC ) ]
+     [ Out( records ), Card_Ready_For_Cryptogram( ~PAN, PDOL, ATC ) ]
     variants (modulo AC)
     1. AIP   = AIP.10
        z     = fst(AIP.10)
@@ -893,7 +892,7 @@ rule (modulo E) Card_Responds_To_InternalAuthenticate:
   -->
    [
    Out( <~nc, sign(<'05', ~nc, DDOL>, ~privkCard)> ),
-   Card_Ready_For_Transaction( ~PAN, PDOL, ATC )
+   Card_Ready_For_Cryptogram( ~PAN, PDOL, ATC )
    ]
 
   /* has exactly the trivial AC variant */
@@ -956,9 +955,9 @@ rule (modulo E) Terminal_Processes_CVM_NoPIN:
    ]
   -->
    [
-   Terminal_Ready_For_Transaction( $Terminal, ~PAN, $Bank, $CA,
-                                   <$amount, country, currency, date, type, ~UN>, AIP, pubkBank, pubkCard,
-                                   'NoPIN', 'Null', CVM
+   Terminal_Ready_For_Cryptogram( $Terminal, ~PAN, $Bank, $CA,
+                                  <$amount, country, currency, date, type, ~UN>, AIP, pubkBank, pubkCard,
+                                  'NoPIN', 'Null', CVM
    )
    ]
 
@@ -974,9 +973,9 @@ rule (modulo E) Terminal_Processes_CVM_OnlinePIN:
    ]
   -->
    [
-   Terminal_Ready_For_Transaction( $Terminal, ~PAN, $Bank, $CA,
-                                   <$amount, country, currency, date, type, ~UN>, AIP, pubkBank, pubkCard,
-                                   'OnlinePIN', aenc(PIN, pubkBank), 'OnlinePIN'
+   Terminal_Ready_For_Cryptogram( $Terminal, ~PAN, $Bank, $CA,
+                                  <$amount, country, currency, date, type, ~UN>, AIP, pubkBank, pubkCard,
+                                  'OnlinePIN', aenc(PIN, pubkBank), 'OnlinePIN'
    )
    ]
 
@@ -992,9 +991,9 @@ rule (modulo E) Terminal_Processes_CVM_ODCVM:
    ]
   -->
    [
-   Terminal_Ready_For_Transaction( $Terminal, ~PAN, $Bank, $CA,
-                                   <$amount, country, currency, date, type, ~UN>,
-                                   <auth, 'ODCVM', furtherData2>, pubkBank, pubkCard, 'ODCVM', 'Null', CVM
+   Terminal_Ready_For_Cryptogram( $Terminal, ~PAN, $Bank, $CA,
+                                  <$amount, country, currency, date, type, ~UN>,
+                                  <auth, 'ODCVM', furtherData2>, pubkBank, pubkCard, 'ODCVM', 'Null', CVM
    )
    ]
 
@@ -1002,8 +1001,8 @@ rule (modulo E) Terminal_Processes_CVM_ODCVM:
 
 rule (modulo E) Terminal_Sends_GenerateAC_NoCDA:
    [
-   Terminal_Ready_For_Transaction( $Terminal, ~PAN, $Bank, $CA, PDOL, AIP,
-                                   pubkBank, pubkCard, CVM, encPIN, supportedCVM
+   Terminal_Ready_For_Cryptogram( $Terminal, ~PAN, $Bank, $CA, PDOL, AIP,
+                                  pubkBank, pubkCard, CVM, encPIN, supportedCVM
    ),
    In( acType )
    ]
@@ -1019,8 +1018,8 @@ rule (modulo E) Terminal_Sends_GenerateAC_NoCDA:
   /*
   rule (modulo AC) Terminal_Sends_GenerateAC_NoCDA:
      [
-     Terminal_Ready_For_Transaction( $Terminal, ~PAN, $Bank, $CA, PDOL, AIP,
-                                     pubkBank, pubkCard, CVM, encPIN, supportedCVM
+     Terminal_Ready_For_Cryptogram( $Terminal, ~PAN, $Bank, $CA, PDOL, AIP,
+                                    pubkBank, pubkCard, CVM, encPIN, supportedCVM
      ),
      In( acType )
      ]
@@ -1042,8 +1041,8 @@ rule (modulo E) Terminal_Sends_GenerateAC_NoCDA:
 
 rule (modulo E) Terminal_Sends_GenerateAC_CDA:
    [
-   Terminal_Ready_For_Transaction( $Terminal, ~PAN, $Bank, $CA, PDOL,
-                                   <'CDA', furtherData>, pubkBank, pubkCard, CVM, encPIN, supportedCVM
+   Terminal_Ready_For_Cryptogram( $Terminal, ~PAN, $Bank, $CA, PDOL,
+                                  <'CDA', furtherData>, pubkBank, pubkCard, CVM, encPIN, supportedCVM
    ),
    In( acType )
    ]
@@ -1060,12 +1059,12 @@ rule (modulo E) Terminal_Sends_GenerateAC_CDA:
 
 rule (modulo E) Card_Responds_To_GenerateAC_NoCDA:
    [
-   Card_Ready_For_Transaction( ~PAN, PDOL, ATC ), !AIP( ~PAN, AIP ),
+   Card_Ready_For_Cryptogram( ~PAN, PDOL, ATC ), !AIP( ~PAN, AIP ),
    !Shk( ~PAN, ~MK ), !IssuingBank( ~PAN, $Bank ),
    In( <'GENERATE_AC', CID, 'NoCDA', 'TVR', CVM, 'HHMMSS'> )
    ]
   --[
-  Running( ~PAN, 'Null',
+  Running( ~PAN, 'Terminal',
            <'Card', 'Terminal', ~PAN, AIP, CVM, <PDOL, 'TVR', CVM, 'HHMMSS'>, ATC, 
             MAC(f(~MK, ATC), <PDOL, 'TVR', CVM, 'HHMMSS'>, AIP, ATC, <'IAD', CID>), 
             'IAD', CID>
@@ -1087,15 +1086,15 @@ rule (modulo E) Card_Responds_To_GenerateAC_NoCDA:
 
 rule (modulo E) Card_Responds_To_GenerateAC_CDA:
    [
-   Card_Ready_For_Transaction( ~PAN,
-                               <amount, country, currency, date, type, UN>, ATC
+   Card_Ready_For_Cryptogram( ~PAN,
+                              <amount, country, currency, date, type, UN>, ATC
    ),
    !LtkCard( ~PAN, ~privkCard ), !AIP( ~PAN, <'CDA', furtherData> ),
    !Shk( ~PAN, ~MK ), !IssuingBank( ~PAN, $Bank ), Fr( ~nc ),
    In( <'GENERATE_AC', CID, 'CDA', 'TVR', CVM, 'HHMMSS'> )
    ]
   --[
-  Running( ~PAN, ~nc,
+  Running( ~PAN, 'Terminal',
            <'Card', 'Terminal', ~PAN, <'CDA', furtherData>, CVM, 
             <<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>, 
             ATC, 
@@ -1298,7 +1297,7 @@ rule (modulo E) Terminal_Commits_TC:
   TerminalAccepts( <~PAN, <'CDA', furtherData>, CVM, 
                     <<$amount, country, currency, date, type, ~UN>, CDOL1>, ATC, AC, IAD>
   ),
-  Commit( nc, ~PAN,
+  Commit( 'Terminal', ~PAN,
           <'Card', 'Terminal', ~PAN, <'CDA', furtherData>, CVM, 
            <<$amount, country, currency, date, type, ~UN>, CDOL1>, ATC, AC, IAD>
   ),
@@ -1424,7 +1423,7 @@ rule (modulo E) Terminal_Commits_ARQC:
   TerminalAccepts( <~PAN, <'CDA', furtherData>, CVM, 
                     <<$amount, country, currency, date, type, ~UN>, CDOL1>, ATC, AC, IAD>
   ),
-  Commit( nc, ~PAN,
+  Commit( 'Terminal', ~PAN,
           <'Card', 'Terminal', ~PAN, <'CDA', furtherData>, CVM, 
            <<$amount, country, currency, date, type, ~UN>, CDOL1>, ATC, AC, IAD>
   ),
@@ -1503,7 +1502,7 @@ rule (modulo E) Card_Responds_To_GPO_EMV_Visa:
    ]
   --[
   OneCard( ), Once( <~PAN, ATC, 'Card'> ), NEq( CVM, 'CDCVM' ),
-  Running( ~PAN, 'Null',
+  Running( ~PAN, 'Terminal',
            <'Card', 'Terminal', ~PAN, <'EMV', $furtherData>, CVM, 
             <<acType, CVM>, amount, country, currency, date, type, UN>, ATC, 
             MAC(f(~MK, ATC),
@@ -1604,7 +1603,7 @@ rule (modulo E) Card_Responds_To_ReadRecord_DDA_Visa:
    !IssuingBank( ~PAN, $Bank ), In( <'READ_RECORD', 'AFL'> )
    ]
   --[
-  Running( ~PAN, ~nc,
+  Running( ~PAN, 'Terminal',
            <'Card', 'Terminal', ~PAN, <'DDA', furtherData>, CTQ, 
             <TTQ, amount, country, currency, date, type, UN>, ATC, AC, IAD>
   ),
@@ -2377,9 +2376,10 @@ restriction compatibility:
 
 lemma executable:
   exists-trace
-  "∃ Bank PAN nc t #i #j #k #l.
-    (((((((((#i < #j) ∧ (Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i)) ∧
-           (Commit( nc, PAN, <'Card', 'Terminal', t> ) @ #j)) ∧
+  "∃ Bank PAN t #i #j #k #l.
+    (((((((((#i < #j) ∧
+            (Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i)) ∧
+           (Commit( 'Terminal', PAN, <'Card', 'Terminal', t> ) @ #j)) ∧
           (#k < #l)) ∧
          (Running( PAN, Bank, <'Card', 'Bank', t> ) @ #k)) ∧
         (Commit( Bank, PAN, <'Card', 'Bank', t> ) @ #l)) ∧
@@ -2389,9 +2389,9 @@ lemma executable:
     (¬(∃ A #a. Compromise( A ) @ #a))"
 /*
 guarded formula characterizing all satisfying traces:
-"∃ Bank PAN nc t #i #j #k #l.
-  (Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i) ∧
-  (Commit( nc, PAN, <'Card', 'Terminal', t> ) @ #j) ∧
+"∃ Bank PAN t #i #j #k #l.
+  (Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i) ∧
+  (Commit( 'Terminal', PAN, <'Card', 'Terminal', t> ) @ #j) ∧
   (Running( PAN, Bank, <'Card', 'Bank', t> ) @ #k) ∧
   (Commit( Bank, PAN, <'Card', 'Bank', t> ) @ #l)
  ∧
@@ -2403,21 +2403,21 @@ guarded formula characterizing all satisfying traces:
   (∀ A #a. (Compromise( A ) @ #a) ⇒ ⊥)"
 */
 simplify
-solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
+solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
   case Card_Responds_To_GenerateAC_CDA
   solve( !Shk( ~PAN, ~MK ) ▶₃ #i )
     case Create_Card
     solve( !IssuingBank( ~PAN, $Bank ) ▶₄ #i )
       case Create_Card
-      solve( Card_Ready_For_Transaction( ~PAN,
-                                         <amount, country, currency, date, type, UN>, ATC
+      solve( Card_Ready_For_Cryptogram( ~PAN,
+                                        <amount, country, currency, date, type, UN>, ATC
              ) ▶₀ #i )
         case Card_Responds_To_ReadRecord_NotDDA_case_2
         solve( !LtkCard( ~PAN, ~privkCard ) ▶₁ #i )
           case Set_Records_NotSDA
           solve( !AIP( ~PAN, <'CDA', furtherData> ) ▶₂ #i )
             case Create_Card
-            solve( Commit( ~nc, ~PAN,
+            solve( Commit( 'Terminal', ~PAN,
                            <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, CVM, 
                             <<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>, 
                             ~ATC, 
@@ -2429,7 +2429,7 @@ solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
               case Terminal_Commits_ARQC
               solve( !KU( ~UN ) @ #vk.28 )
                 case Terminal_Sends_GPO_case_2
-                solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, ~nc, 'ARQC',
+                solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc.1, 'ARQC',
                                              <~PAN, <'CDA', $furtherData>, CVM, 
                                               <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                                'HHMMSS'>, 
@@ -2444,99 +2444,99 @@ solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
                   case Terminal_Receives_AC_CDA_case_1
                   solve( !KU( ~ATC ) @ #vk.37 )
                     case Card_Responds_To_GenerateAC_CDA
-                    solve( !KU( ~nc ) @ #vk.44 )
-                      case Card_Responds_To_GenerateAC_CDA
-                      solve( !KU( ~PAN ) @ #vk.50 )
-                        case Card_Responds_To_ReadRecord_NotDDA_case_1
-                        solve( !Value( $amount, 'High' ) ▶₁ #j )
-                          case Generate_Amount_High
-                          solve( Recv( $Bank, $Terminal, <~channelID, 'Mastercard', '2'>,
-                                       <'ARC', ARPC>
-                                 ) ▶₂ #j )
-                            case Terminal_Bank_Network_case_2
-                            solve( Running( ~PAN, Bank.1,
-                                            <'Card', 'Bank', ~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
-                                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
-                                              'TVR', 'OnlinePIN', 'HHMMSS'>, 
-                                             ~ATC, 
-                                             MAC(f(~MK, ~ATC),
-                                                 <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
-                                                  'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                                 <'CDA', $furtherData>, ~ATC, <'IAD', CID>), 
-                                             'IAD', CID>
-                                   ) @ #k )
-                              case Card_Responds_To_GenerateAC_CDA
-                              solve( !Shk( ~PAN, ~MK ) ▶₃ #k )
+                    solve( !KU( ~PAN ) @ #vk.48 )
+                      case Card_Responds_To_ReadRecord_NotDDA_case_1
+                      solve( !Value( $amount, 'High' ) ▶₁ #j )
+                        case Generate_Amount_High
+                        solve( Recv( $Bank, $Terminal, <~channelID, 'Mastercard', '2'>,
+                                     <'ARC', ARPC>
+                               ) ▶₂ #j )
+                          case Terminal_Bank_Network_case_2
+                          solve( Running( ~PAN, Bank.1,
+                                          <'Card', 'Bank', ~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
+                                           <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
+                                            'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                           ~ATC, 
+                                           MAC(f(~MK, ~ATC),
+                                               <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
+                                                'TVR', 'OnlinePIN', 'HHMMSS'>,
+                                               <'CDA', $furtherData>, ~ATC, <'IAD', CID>), 
+                                           'IAD', CID>
+                                 ) @ #k )
+                            case Card_Responds_To_GenerateAC_CDA
+                            solve( !Shk( ~PAN, ~MK ) ▶₃ #k )
+                              case Create_Card
+                              solve( !IssuingBank( ~PAN, $Bank.1 ) ▶₄ #k )
                                 case Create_Card
-                                solve( !IssuingBank( ~PAN, $Bank.1 ) ▶₄ #k )
-                                  case Create_Card
-                                  solve( Card_Ready_For_Transaction( ~PAN,
-                                                                     <$amount, 'Switzerland', 'CHF', 
-                                                                      'YYMMDD', 'Purchase', ~UN>,
-                                                                     ~ATC
-                                         ) ▶₀ #k )
-                                    case Card_Responds_To_ReadRecord_NotDDA
-                                    solve( Commit( $Bank, ~PAN,
-                                                   <'Card', 'Bank', ~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
-                                                    <
-                                                     <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
-                                                     >, 
-                                                     'TVR', 'OnlinePIN', 'HHMMSS'>, 
-                                                    ~ATC, 
-                                                    MAC(f(~MK, ~ATC),
-                                                        <
-                                                         <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                          'Purchase', ~UN>, 
-                                                         'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                                        <'CDA', $furtherData>, ~ATC, <'IAD', CID>), 
-                                                    'IAD', CID>
-                                           ) @ #l )
-                                      case Bank_Commits
-                                      solve( Bank_Commits( $Bank, $Terminal.1,
-                                                           <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
-                                                            <
-                                                             <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                              'Purchase', ~UN>, 
-                                                             'TVR', 'OnlinePIN', 'HHMMSS'>, 
-                                                            ~ATC, 
+                                solve( Card_Ready_For_Cryptogram( ~PAN,
+                                                                  <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                                   'Purchase', ~UN>,
+                                                                  ~ATC
+                                       ) ▶₀ #k )
+                                  case Card_Responds_To_ReadRecord_NotDDA
+                                  solve( Commit( $Bank, ~PAN,
+                                                 <'Card', 'Bank', ~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
+                                                  <
+                                                   <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
+                                                   >, 
+                                                   'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                                  ~ATC, 
+                                                  MAC(f(~MK, ~ATC),
+                                                      <
+                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
+                                                        ~UN>, 
+                                                       'TVR', 'OnlinePIN', 'HHMMSS'>,
+                                                      <'CDA', $furtherData>, ~ATC, <'IAD', CID>), 
+                                                  'IAD', CID>
+                                         ) @ #l )
+                                    case Bank_Commits
+                                    solve( Bank_Commits( $Bank, $Terminal.1,
+                                                         <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
+                                                          <
+                                                           <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                            'Purchase', ~UN>, 
+                                                           'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                                          ~ATC, 
+                                                          MAC(f(~MK, ~ATC),
+                                                              <
+                                                               <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                                'Purchase', ~UN>, 
+                                                               'TVR', 'OnlinePIN', 'HHMMSS'>,
+                                                              <'CDA', $furtherData>, ~ATC, <'IAD', CID>), 
+                                                          'IAD', CID>,
+                                                         channelID.1, ARPC.1
+                                           ) ▶₀ #l )
+                                      case Bank_Processes_CVM_OnlinePIN
+                                      solve( !Value( $amount, 'High' ) ▶₁ #l )
+                                        case Generate_Amount_High
+                                        solve( !IssuingCA( $Bank, $CA.1 ) ▶₂ #l )
+                                          case Create_Bank
+                                          solve( !KU( sign(<'05', nc.1, 'ARQC', 
                                                             MAC(f(~MK, ~ATC),
                                                                 <
                                                                  <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
                                                                   'Purchase', ~UN>, 
                                                                  'TVR', 'OnlinePIN', 'HHMMSS'>,
                                                                 <'CDA', $furtherData>, ~ATC, <'IAD', CID>), 
-                                                            'IAD', CID>,
-                                                           channelID.1, ARPC.1
-                                             ) ▶₀ #l )
-                                        case Bank_Processes_CVM_OnlinePIN
-                                        solve( !Value( $amount, 'High' ) ▶₁ #l )
-                                          case Generate_Amount_High
-                                          solve( !IssuingCA( $Bank, $CA.1 ) ▶₂ #l )
-                                            case Create_Bank
-                                            solve( !KU( sign(<'05', ~nc, 'ARQC', 
-                                                              MAC(f(~MK, ~ATC),
-                                                                  <
-                                                                   <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                                    'Purchase', ~UN>, 
-                                                                   'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                                                  <'CDA', $furtherData>, ~ATC, <'IAD', CID>), 
-                                                              h(<
-                                                                 <
-                                                                  <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                                   'Purchase', ~UN>, 
-                                                                  'TVR', 'OnlinePIN', 'HHMMSS'>, 
-                                                                 'ARQC', ~ATC, 
-                                                                 MAC(f(~MK, ~ATC),
-                                                                     <
-                                                                      <$amount, 'Switzerland', 'CHF', 
-                                                                       'YYMMDD', 'Purchase', ~UN>, 
-                                                                      'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                                                     <'CDA', $furtherData>, ~ATC,
-                                                                     <'IAD', CID>), 
-                                                                 'IAD', CID>), 
-                                                              ~UN>,
-                                                             x)
-                                                   ) @ #vk.53 )
+                                                            h(<
+                                                               <
+                                                                <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                                 'Purchase', ~UN>, 
+                                                                'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                                               'ARQC', ~ATC, 
+                                                               MAC(f(~MK, ~ATC),
+                                                                   <
+                                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                                     'Purchase', ~UN>, 
+                                                                    'TVR', 'OnlinePIN', 'HHMMSS'>,
+                                                                   <'CDA', $furtherData>, ~ATC,
+                                                                   <'IAD', CID>), 
+                                                               'IAD', CID>), 
+                                                            ~UN>,
+                                                           x)
+                                                 ) @ #vk.53 )
+                                            case Card_Responds_To_GenerateAC_CDA
+                                            solve( !KU( ~nc ) @ #vk.52 )
                                               case Card_Responds_To_GenerateAC_CDA
                                               solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA)
                                                      ) @ #vk.63 )
@@ -2556,7 +2556,7 @@ solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
                                                                            ATC.1, AC, IAD>,
                                                                           aenc(~PIN, pk(~privkBank)),
                                                                           ~channelID, ARPC
-                                                         ) ▶₀ #vr.30 )
+                                                         ) ▶₀ #vr.26 )
                                                     case Bank_Receives_AC
                                                     solve( Bank_Checked_AC( $Bank, $Terminal.1,
                                                                             <~PAN, <'CDA', $furtherData>, 
@@ -2578,7 +2578,7 @@ solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
                                                                              'IAD', 'ARQC'>,
                                                                             aenc(~PIN, pk(~privkBank)),
                                                                             channelID.1, ARPC
-                                                           ) ▶₀ #vr.31 )
+                                                           ) ▶₀ #vr.27 )
                                                       case Bank_Receives_AC
                                                       solve( !KU( MAC(f(~MK, ~ATC),
                                                                       <
@@ -31596,13 +31596,13 @@ guarded formula characterizing all counter-examples:
 simplify
 solve( Commit( T, P, <r, 'Terminal', t> ) @ #i )
   case Terminal_Commits_ARQC_case_1
-  solve( Terminal_Received_AC( $Terminal, $Bank, $CA, T, 'ARQC',
+  solve( Terminal_Received_AC( $Terminal, $Bank, $CA, nc, 'ARQC',
                                <~PAN, <'CDA', furtherData>, CVM, 
                                 <<$amount, country, currency, date, type, ~UN>, CDOL1>, ATC, AC, IAD>,
                                'OnlinePIN', ~channelID
          ) ▶₀ #i )
     case Terminal_Receives_AC_CDA_case_1
-    solve( !KU( sign(<'05', T, 'ARQC', AC, 
+    solve( !KU( sign(<'05', nc, 'ARQC', AC, 
                       h(<
                          <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                           'NoPIN', 'HHMMSS'>, 
@@ -31732,7 +31732,7 @@ solve( Commit( T, P, <r, 'Terminal', t> ) @ #i )
     qed
   next
     case Terminal_Receives_AC_CDA_case_2
-    solve( !KU( sign(<'05', T, 'ARQC', AC, 
+    solve( !KU( sign(<'05', nc, 'ARQC', AC, 
                       h(<
                          <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                           'OnlinePIN', 'HHMMSS'>, 
@@ -31862,7 +31862,7 @@ solve( Commit( T, P, <r, 'Terminal', t> ) @ #i )
     qed
   next
     case Terminal_Receives_AC_CDA_case_3
-    solve( !KU( sign(<'05', T, 'ARQC', AC, 
+    solve( !KU( sign(<'05', nc, 'ARQC', AC, 
                       h(<
                          <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                           'OnlinePIN', 'HHMMSS'>, 
@@ -31983,7 +31983,7 @@ solve( Commit( T, P, <r, 'Terminal', t> ) @ #i )
     qed
   next
     case Terminal_Receives_AC_CDA_case_4
-    solve( !KU( sign(<'05', T, 'ARQC', AC, 
+    solve( !KU( sign(<'05', nc, 'ARQC', AC, 
                       h(<
                          <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                           'OnlinePIN', 'HHMMSS'>, 
@@ -32113,7 +32113,7 @@ solve( Commit( T, P, <r, 'Terminal', t> ) @ #i )
     qed
   next
     case Terminal_Receives_AC_CDA_case_5
-    solve( !KU( sign(<'05', T, 'ARQC', AC, 
+    solve( !KU( sign(<'05', nc, 'ARQC', AC, 
                       h(<
                          <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                           'OnlinePIN', 'HHMMSS'>, 
@@ -32234,7 +32234,7 @@ solve( Commit( T, P, <r, 'Terminal', t> ) @ #i )
     qed
   next
     case Terminal_Receives_AC_CDA_case_6
-    solve( !KU( sign(<'05', T, 'ARQC', AC, 
+    solve( !KU( sign(<'05', nc, 'ARQC', AC, 
                       h(<
                          <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                           'ODCVM', 'HHMMSS'>, 
@@ -33177,13 +33177,13 @@ next
   qed
 next
   case Terminal_Commits_TC
-  solve( Terminal_Received_AC( $Terminal, $Bank, $CA, T, 'TC',
+  solve( Terminal_Received_AC( $Terminal, $Bank, $CA, nc, 'TC',
                                <~PAN, <'CDA', furtherData>, CVM, 
                                 <<$amount, country, currency, date, type, ~UN>, CDOL1>, ATC, AC, IAD>,
                                'OnlinePIN', ~channelID
          ) ▶₀ #i )
     case Terminal_Receives_AC_CDA_case_1
-    solve( !KU( sign(<'05', T, 'TC', AC, 
+    solve( !KU( sign(<'05', nc, 'TC', AC, 
                       h(<
                          <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                           'NoPIN', 'HHMMSS'>, 
@@ -33325,7 +33325,7 @@ next
     by contradiction /* from formulas */
   next
     case Terminal_Receives_AC_CDA_case_6
-    solve( !KU( sign(<'05', T, 'TC', AC, 
+    solve( !KU( sign(<'05', nc, 'TC', AC, 
                       h(<
                          <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                           'ODCVM', 'HHMMSS'>, 
@@ -33472,13 +33472,13 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
   case case_1
   solve( Commit( T, P, <r, 'Terminal', t> ) @ #i )
     case Terminal_Commits_ARQC_case_1
-    solve( Terminal_Received_AC( $Terminal, $Bank, $CA, T, 'ARQC',
+    solve( Terminal_Received_AC( $Terminal, $Bank, $CA, nc, 'ARQC',
                                  <~PAN, <'CDA', furtherData>, CVM, 
                                   <<$amount, country, currency, date, type, ~UN>, CDOL1>, ATC, AC, IAD>,
                                  'OnlinePIN', ~channelID
            ) ▶₀ #i )
       case Terminal_Receives_AC_CDA_case_1
-      solve( !KU( sign(<'05', T, 'ARQC', AC, 
+      solve( !KU( sign(<'05', nc, 'ARQC', AC, 
                         h(<
                            <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                             'NoPIN', 'HHMMSS'>, 
@@ -33740,7 +33740,7 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
       qed
     next
       case Terminal_Receives_AC_CDA_case_2
-      solve( !KU( sign(<'05', T, 'ARQC', AC, 
+      solve( !KU( sign(<'05', nc, 'ARQC', AC, 
                         h(<
                            <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                             'OnlinePIN', 'HHMMSS'>, 
@@ -34002,7 +34002,7 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
       qed
     next
       case Terminal_Receives_AC_CDA_case_3
-      solve( !KU( sign(<'05', T, 'ARQC', AC, 
+      solve( !KU( sign(<'05', nc, 'ARQC', AC, 
                         h(<
                            <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                             'OnlinePIN', 'HHMMSS'>, 
@@ -34219,7 +34219,7 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
       qed
     next
       case Terminal_Receives_AC_CDA_case_4
-      solve( !KU( sign(<'05', T, 'ARQC', AC, 
+      solve( !KU( sign(<'05', nc, 'ARQC', AC, 
                         h(<
                            <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                             'OnlinePIN', 'HHMMSS'>, 
@@ -34481,7 +34481,7 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
       qed
     next
       case Terminal_Receives_AC_CDA_case_5
-      solve( !KU( sign(<'05', T, 'ARQC', AC, 
+      solve( !KU( sign(<'05', nc, 'ARQC', AC, 
                         h(<
                            <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                             'OnlinePIN', 'HHMMSS'>, 
@@ -34698,7 +34698,7 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
       qed
     next
       case Terminal_Receives_AC_CDA_case_6
-      solve( !KU( sign(<'05', T, 'ARQC', AC, 
+      solve( !KU( sign(<'05', nc, 'ARQC', AC, 
                         h(<
                            <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                             'ODCVM', 'HHMMSS'>, 
@@ -36675,13 +36675,13 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
     qed
   next
     case Terminal_Commits_TC
-    solve( Terminal_Received_AC( $Terminal, $Bank, $CA, T, 'TC',
+    solve( Terminal_Received_AC( $Terminal, $Bank, $CA, nc, 'TC',
                                  <~PAN, <'CDA', furtherData>, CVM, 
                                   <<$amount, country, currency, date, type, ~UN>, CDOL1>, ATC, AC, IAD>,
                                  'OnlinePIN', ~channelID
            ) ▶₀ #i )
       case Terminal_Receives_AC_CDA_case_1
-      solve( !KU( sign(<'05', T, 'TC', AC, 
+      solve( !KU( sign(<'05', nc, 'TC', AC, 
                         h(<
                            <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                             'NoPIN', 'HHMMSS'>, 
@@ -36955,7 +36955,7 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
       by contradiction /* from formulas */
     next
       case Terminal_Receives_AC_CDA_case_6
-      solve( !KU( sign(<'05', T, 'TC', AC, 
+      solve( !KU( sign(<'05', nc, 'TC', AC, 
                         h(<
                            <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                             'ODCVM', 'HHMMSS'>, 
@@ -37178,13 +37178,13 @@ next
     case case_1
     solve( Commit( T, P, <r, 'Terminal', t> ) @ #i )
       case Terminal_Commits_ARQC_case_1
-      solve( Terminal_Received_AC( $Terminal, $Bank, $CA, T, 'ARQC',
+      solve( Terminal_Received_AC( $Terminal, $Bank, $CA, nc, 'ARQC',
                                    <~PAN, <'CDA', furtherData>, CVM, 
                                     <<$amount, country, currency, date, type, ~UN>, CDOL1>, ATC, AC, IAD>,
                                    'OnlinePIN', ~channelID
              ) ▶₀ #i )
         case Terminal_Receives_AC_CDA_case_1
-        solve( !KU( sign(<'05', T, 'ARQC', AC, 
+        solve( !KU( sign(<'05', nc, 'ARQC', AC, 
                           h(<
                              <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                               'NoPIN', 'HHMMSS'>, 
@@ -37446,7 +37446,7 @@ next
         qed
       next
         case Terminal_Receives_AC_CDA_case_2
-        solve( !KU( sign(<'05', T, 'ARQC', AC, 
+        solve( !KU( sign(<'05', nc, 'ARQC', AC, 
                           h(<
                              <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                               'OnlinePIN', 'HHMMSS'>, 
@@ -37480,7 +37480,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -37501,7 +37501,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -37532,7 +37532,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -37553,7 +37553,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -37584,7 +37584,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -37605,7 +37605,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -37656,7 +37656,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -37677,7 +37677,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -37708,7 +37708,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -37729,7 +37729,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -37760,7 +37760,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -37781,7 +37781,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -37832,7 +37832,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -37853,7 +37853,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -37884,7 +37884,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -37905,7 +37905,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -37936,7 +37936,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -37957,7 +37957,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -38008,7 +38008,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -38029,7 +38029,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -38060,7 +38060,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -38081,7 +38081,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -38112,7 +38112,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -38133,7 +38133,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -38184,7 +38184,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -38205,7 +38205,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -38236,7 +38236,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -38257,7 +38257,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -38288,7 +38288,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -38309,7 +38309,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -38513,7 +38513,7 @@ next
         qed
       next
         case Terminal_Receives_AC_CDA_case_3
-        solve( !KU( sign(<'05', T, 'ARQC', AC, 
+        solve( !KU( sign(<'05', nc, 'ARQC', AC, 
                           h(<
                              <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                               'OnlinePIN', 'HHMMSS'>, 
@@ -38730,7 +38730,7 @@ next
         qed
       next
         case Terminal_Receives_AC_CDA_case_4
-        solve( !KU( sign(<'05', T, 'ARQC', AC, 
+        solve( !KU( sign(<'05', nc, 'ARQC', AC, 
                           h(<
                              <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                               'OnlinePIN', 'HHMMSS'>, 
@@ -38764,7 +38764,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -38785,7 +38785,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -38816,7 +38816,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -38837,7 +38837,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -38868,7 +38868,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -38889,7 +38889,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -38940,7 +38940,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -38961,7 +38961,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -38992,7 +38992,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -39013,7 +39013,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -39044,7 +39044,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -39065,7 +39065,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -39116,7 +39116,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -39137,7 +39137,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -39168,7 +39168,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -39189,7 +39189,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -39220,7 +39220,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -39241,7 +39241,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -39292,7 +39292,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -39313,7 +39313,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -39344,7 +39344,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -39365,7 +39365,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -39396,7 +39396,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -39417,7 +39417,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -39468,7 +39468,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -39489,7 +39489,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -39520,7 +39520,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -39541,7 +39541,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -39572,7 +39572,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -39593,7 +39593,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -39797,7 +39797,7 @@ next
         qed
       next
         case Terminal_Receives_AC_CDA_case_5
-        solve( !KU( sign(<'05', T, 'ARQC', AC, 
+        solve( !KU( sign(<'05', nc, 'ARQC', AC, 
                           h(<
                              <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                               'OnlinePIN', 'HHMMSS'>, 
@@ -40014,7 +40014,7 @@ next
         qed
       next
         case Terminal_Receives_AC_CDA_case_6
-        solve( !KU( sign(<'05', T, 'ARQC', AC, 
+        solve( !KU( sign(<'05', nc, 'ARQC', AC, 
                           h(<
                              <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                               'ODCVM', 'HHMMSS'>, 
@@ -42746,13 +42746,13 @@ next
       qed
     next
       case Terminal_Commits_TC
-      solve( Terminal_Received_AC( $Terminal, $Bank, $CA, T, 'TC',
+      solve( Terminal_Received_AC( $Terminal, $Bank, $CA, nc, 'TC',
                                    <~PAN, <'CDA', furtherData>, CVM, 
                                     <<$amount, country, currency, date, type, ~UN>, CDOL1>, ATC, AC, IAD>,
                                    'OnlinePIN', ~channelID
              ) ▶₀ #i )
         case Terminal_Receives_AC_CDA_case_1
-        solve( !KU( sign(<'05', T, 'TC', AC, 
+        solve( !KU( sign(<'05', nc, 'TC', AC, 
                           h(<
                              <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                               'NoPIN', 'HHMMSS'>, 
@@ -43026,7 +43026,7 @@ next
         by contradiction /* from formulas */
       next
         case Terminal_Receives_AC_CDA_case_6
-        solve( !KU( sign(<'05', T, 'TC', AC, 
+        solve( !KU( sign(<'05', nc, 'TC', AC, 
                           h(<
                              <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                               'ODCVM', 'HHMMSS'>, 
@@ -43247,13 +43247,13 @@ next
     case case_2
     solve( Commit( T, P, <r, 'Terminal', t> ) @ #i )
       case Terminal_Commits_ARQC_case_1
-      solve( Terminal_Received_AC( $Terminal, $Bank, $CA, T, 'ARQC',
+      solve( Terminal_Received_AC( $Terminal, $Bank, $CA, nc, 'ARQC',
                                    <~PAN, <'CDA', furtherData>, CVM, 
                                     <<$amount, country, currency, date, type, ~UN>, CDOL1>, ATC, AC, IAD>,
                                    'OnlinePIN', ~channelID
              ) ▶₀ #i )
         case Terminal_Receives_AC_CDA_case_1
-        solve( !KU( sign(<'05', T, 'ARQC', AC, 
+        solve( !KU( sign(<'05', nc, 'ARQC', AC, 
                           h(<
                              <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                               'NoPIN', 'HHMMSS'>, 
@@ -43515,7 +43515,7 @@ next
         qed
       next
         case Terminal_Receives_AC_CDA_case_2
-        solve( !KU( sign(<'05', T, 'ARQC', AC, 
+        solve( !KU( sign(<'05', nc, 'ARQC', AC, 
                           h(<
                              <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                               'OnlinePIN', 'HHMMSS'>, 
@@ -43549,7 +43549,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -43570,7 +43570,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -43601,7 +43601,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -43622,7 +43622,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -43653,7 +43653,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -43674,7 +43674,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -43725,7 +43725,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -43746,7 +43746,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -43777,7 +43777,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -43798,7 +43798,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -43829,7 +43829,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -43850,7 +43850,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -43901,7 +43901,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -43922,7 +43922,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -43953,7 +43953,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -43974,7 +43974,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -44005,7 +44005,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -44026,7 +44026,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -44077,7 +44077,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -44098,7 +44098,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -44129,7 +44129,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -44150,7 +44150,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -44181,7 +44181,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -44202,7 +44202,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -44253,7 +44253,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -44274,7 +44274,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -44305,7 +44305,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -44326,7 +44326,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -44357,7 +44357,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -44378,7 +44378,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -44582,7 +44582,7 @@ next
         qed
       next
         case Terminal_Receives_AC_CDA_case_3
-        solve( !KU( sign(<'05', T, 'ARQC', AC, 
+        solve( !KU( sign(<'05', nc, 'ARQC', AC, 
                           h(<
                              <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                               'OnlinePIN', 'HHMMSS'>, 
@@ -44799,7 +44799,7 @@ next
         qed
       next
         case Terminal_Receives_AC_CDA_case_4
-        solve( !KU( sign(<'05', T, 'ARQC', AC, 
+        solve( !KU( sign(<'05', nc, 'ARQC', AC, 
                           h(<
                              <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                               'OnlinePIN', 'HHMMSS'>, 
@@ -44833,7 +44833,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -44854,7 +44854,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -44885,7 +44885,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -44906,7 +44906,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -44937,7 +44937,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -44958,7 +44958,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -45009,7 +45009,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -45030,7 +45030,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -45061,7 +45061,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -45082,7 +45082,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -45113,7 +45113,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -45134,7 +45134,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -45185,7 +45185,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -45206,7 +45206,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -45237,7 +45237,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -45258,7 +45258,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -45289,7 +45289,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -45310,7 +45310,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -45361,7 +45361,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -45382,7 +45382,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -45413,7 +45413,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -45434,7 +45434,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -45465,7 +45465,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -45486,7 +45486,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -45537,7 +45537,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -45558,7 +45558,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -45589,7 +45589,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -45610,7 +45610,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -45641,7 +45641,7 @@ next
                                   'IAD', 'ARQC'>
                          ) @ #i2 )
                     case Terminal_Commits_ARQC
-                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'ARQC',
+                    solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'ARQC',
                                                  <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                   <
                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
@@ -45662,7 +45662,7 @@ next
                     qed
                   next
                     case Terminal_Commits_TC
-                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, T2, 'TC',
+                    by solve( Terminal_Received_AC( $Terminal.1, $Bank.1, $CA.1, nc.1, 'TC',
                                                     <~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                                      <
                                                       <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
@@ -45866,7 +45866,7 @@ next
         qed
       next
         case Terminal_Receives_AC_CDA_case_5
-        solve( !KU( sign(<'05', T, 'ARQC', AC, 
+        solve( !KU( sign(<'05', nc, 'ARQC', AC, 
                           h(<
                              <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                               'OnlinePIN', 'HHMMSS'>, 
@@ -46083,7 +46083,7 @@ next
         qed
       next
         case Terminal_Receives_AC_CDA_case_6
-        solve( !KU( sign(<'05', T, 'ARQC', AC, 
+        solve( !KU( sign(<'05', nc, 'ARQC', AC, 
                           h(<
                              <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                               'ODCVM', 'HHMMSS'>, 
@@ -48815,13 +48815,13 @@ next
       qed
     next
       case Terminal_Commits_TC
-      solve( Terminal_Received_AC( $Terminal, $Bank, $CA, T, 'TC',
+      solve( Terminal_Received_AC( $Terminal, $Bank, $CA, nc, 'TC',
                                    <~PAN, <'CDA', furtherData>, CVM, 
                                     <<$amount, country, currency, date, type, ~UN>, CDOL1>, ATC, AC, IAD>,
                                    'OnlinePIN', ~channelID
              ) ▶₀ #i )
         case Terminal_Receives_AC_CDA_case_1
-        solve( !KU( sign(<'05', T, 'TC', AC, 
+        solve( !KU( sign(<'05', nc, 'TC', AC, 
                           h(<
                              <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                               'NoPIN', 'HHMMSS'>, 
@@ -49095,7 +49095,7 @@ next
         by contradiction /* from formulas */
       next
         case Terminal_Receives_AC_CDA_case_6
-        solve( !KU( sign(<'05', T, 'TC', AC, 
+        solve( !KU( sign(<'05', nc, 'TC', AC, 
                           h(<
                              <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                               'ODCVM', 'HHMMSS'>, 
@@ -54478,6 +54478,8 @@ summary of summaries:
 
 analyzed: models-n-proofs/contactless/Mastercard_CDA_OnlinePIN_High.spthy
 
+  output:          models-n-proofs/contactless/Mastercard_CDA_OnlinePIN_High.proof
+  processing time: 2446.598884041s
   executable (exists-trace): verified (32 steps)
   bank_accepts (all-traces): verified (7145 steps)
   auth_to_terminal_minimal (all-traces): verified (473 steps)
@@ -54490,5 +54492,3 @@ analyzed: models-n-proofs/contactless/Mastercard_CDA_OnlinePIN_High.spthy
   secrecy_PAN (all-traces): falsified - found trace (7 steps)
 
 ==============================================================================
-10874.32user 8765.87system 47:20.58elapsed 691%CPU (0avgtext+0avgdata 2409576maxresident)k
-0inputs+88112outputs (0major+62580689minor)pagefaults 0swaps

@@ -2,6 +2,7 @@ TAMARIN = tamarin-prover#-develop
 #TFLAGS = +RTS -N10 -M20G -RTS
 DECOMMENT = tools/decomment
 PREFIXDIR = models-n-proofs
+SEPARATOR = ==============================================================================
 
 #configuration variables
 generic = Contactless
@@ -12,7 +13,7 @@ value = Low
 authz = Offline
 
 #other variables
-decomment = yes
+decomment = Yes
 
 #to uncomment the code blocks that follow the selected configuration
 left1 = if(\(|\(([a-zA-Z0-9]+\|)+)
@@ -46,6 +47,7 @@ ifeq ($(kernel), Mastercard)
 	theory = Mastercard_$(auth)_$(CVM)_$(value)
 	oracle = Mastercard.oracle
 else
+
 ifdef fix
 	regex = ($(regex0)|$(regex1)|$(regex3)|$(regex5))
 	theory = Visa_$(auth)_$(value)_Fix
@@ -70,7 +72,7 @@ ifdef lemma
 endif
 
 #the Tamarin command to be executed
-cmd = $(TAMARIN) --prove$(_lemma) $(dir)/$(theory).spthy $(_oracle) $(TFLAGS)
+cmd = $(TAMARIN) --prove$(_lemma) $(dir)/$(theory).spthy $(_oracle) $(TFLAGS) --output=$(dir)/$(theory).proof
 
 prove:
 	#Create directory for specific models and their proofs
@@ -81,7 +83,7 @@ prove:
 	sed -E 's/theory .*/theory $(theory)/' $(dir)/$(theory).tmp > $(dir)/$(theory).spthy
 	
 	#Remove all comments
-ifeq ($(decomment), yes)
+ifeq ($(decomment), Yes)
 ifeq ($(DECOMMENT),$(wildcard $(DECOMMENT)))
 	$(DECOMMENT) $(dir)/$(theory).spthy > $(dir)/$(theory).tmp
 	cat $(dir)/$(theory).tmp > $(dir)/$(theory).spthy
@@ -91,18 +93,26 @@ endif
 	#Print date and time for monitoring
 	date '+Analysis started on %Y-%m-%d at %H:%M:%S'
 	
-	#Run Tamarin
+	#run Tamarin
 	echo '$(cmd)'
-	(time $(cmd))> $(dir)/$(theory).tmp 2>&1
-	(sed -n '/^theory $(theory) begin/,$$p' $(dir)/$(theory).tmp) > $(dir)/$(theory).proof
+	#(time $(cmd))> $(dir)/$(theory).tmp 2>&1
+	$(cmd) > $(dir)/$(theory).tmp 2>&1
+	
+	#add breaklines
+	echo >> $(dir)/$(theory).proof
+	echo >> $(dir)/$(theory).proof
+	
+	#add summary of results to proof file
+	(sed -n '/^$(SEPARATOR)/,$$p' $(dir)/$(theory).tmp) >> $(dir)/$(theory).proof
 	
 	#Clean up
 	$(RM) $(dir)/$(theory).tmp
 	echo 'Done.'
 
 #for clarity, will use below some redundant variable assignments
-####
-mastercard:
+
+contactless:
+	#mastercard:
 	#SDA
 	$(MAKE) auth=SDA CVM=NoPIN value=Low
 	$(MAKE) auth=SDA CVM=NoPIN value=High
@@ -119,7 +129,7 @@ mastercard:
 	$(MAKE) auth=CDA CVM=OnlinePIN value=Low
 	$(MAKE) auth=CDA CVM=OnlinePIN value=High
 	
-visa:
+	#visa:
 	#EMV mode
 	$(MAKE) kernel=Visa auth=EMV value=Low
 	$(MAKE) kernel=Visa auth=EMV value=High
@@ -127,10 +137,11 @@ visa:
 	$(MAKE) kernel=Visa auth=DDA value=Low
 	$(MAKE) kernel=Visa auth=DDA value=High
 
-visa-fix:
+	#visa-fix:
 	$(MAKE) kernel=Visa auth=DDA value=Low fix=Yes
 
-contact-offline:
+contact:
+	#contact-offline:
 	#SDA
 	$(MAKE) generic=Contact auth=SDA CVM=NoPIN authz=Offline 
 	$(MAKE) generic=Contact auth=SDA CVM=PlainPIN authz=Offline 
@@ -147,7 +158,7 @@ contact-offline:
 	$(MAKE) generic=Contact auth=CDA CVM=EncPIN authz=Offline 
 	$(MAKE) generic=Contact auth=CDA CVM=OnlinePIN authz=Offline 
 
-contact-online:
+	#contact-online:
 	#SDA
 	$(MAKE) generic=Contact auth=SDA CVM=NoPIN authz=Online 
 	$(MAKE) generic=Contact auth=SDA CVM=PlainPIN authz=Online 
@@ -163,6 +174,10 @@ contact-online:
 	$(MAKE) generic=Contact auth=CDA CVM=PlainPIN authz=Online 
 	$(MAKE) generic=Contact auth=CDA CVM=EncPIN authz=Online 
 	$(MAKE) generic=Contact auth=CDA CVM=OnlinePIN authz=Online
+
+collect: #collect the results
+	./tools/collect models-n-proofs/contact/ --output=results-contact.html #--lemmas=tools/lemmas.txt --tex-add=tools/tex-add.txt
+	./tools/collect models-n-proofs/contactless/ --output=results-contactless.html #--lemmas=tools/lemmas.txt --tex-add=tools/tex-add.txt
 
 .PHONY: clean
 

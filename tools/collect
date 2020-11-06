@@ -16,9 +16,11 @@ WARNING_REGEX = r'^\s*WARNING\: (\d+ wellformedness check failed)\!$'
 LEMMA_REGEX = r'^\s*(\w+) \((all-traces|exists-trace)\): (.+ \(\d+ steps\))$'
 RULE_HEADER_REGEX = r'^rule \(modulo E\) (\w+)\:$'
 RULE_HEADER_SPTHY_REGEX = r'^rule (\w+)\:$'
+STEPS_REGEX = r'( - found trace| - no trace found)? \(\d+ steps\)'
+#time
 TIME_REGEX = r'^real\s([\dmsh\.\,]+)$'
 GNU_TIME_REGEX = r'^.*\s([\d\:\.\,]+)elapsed.*$'
-STEPS_REGEX = r'( - found trace| - no trace found)? \(\d+ steps\)'
+TAMARIN_TIME_REGEX = r'^\s+processing time:\s([\d\:\.\,]+).*$'
 
 def to_timeformat(time):
 	hours = int(time / 3600)
@@ -27,25 +29,21 @@ def to_timeformat(time):
 	time  -= mins * 60
 	secs = time
 
+	decimals_for_secs = '0'
+	if hours + mins == 0:
+		decimals_for_secs = '2'
+
 	if mins + hours > 0:
 		if hours > 0:
 			tt = str(hours) + 'h'\
 						+ '{:02d}'.format(mins) + 'm'\
-						+ '{0:02.0f}'.format(secs) + 's'
+						+ ('{0:02.'+ decimals_for_secs + 'f}').format(secs) + 's'
 		else:
-			tt = str(mins) + 'm' + '{0:02.0f}'.format(secs) + 's'
+			tt = str(mins) + 'm' + ('{0:02.'+ decimals_for_secs + 'f}').format(secs) + 's'
 	else:
-		tt = '{0:.0f}'.format(secs) + 's'
+		tt = ('{0:.'+ decimals_for_secs + 'f}').format(secs) + 's'
 	
 	return tt
-
-def differ_for_hline(prev_proto_name, proto_name):
-	if prev_proto_name == '': return False
-	try:
-		return proto_name.split('_')[:1] != prev_proto_name.split('_')[0:1]
-	except:
-		return False
-	#return False
 
 def to_secs(time):
 	t = 0.0
@@ -71,9 +69,9 @@ def list_to_table_entry(items, verified, proto_idx):
 				_class = ' class="green"'		
 			
 			html_list += '<td'+_class+'>' + items[idx] + '</td>'			
-	return '<tr>' + ''.join(html_list) + '</tr>'
+	return '<tr>' + ''.join(html_list) + '</tr>\n'
 
-def create_html_code(directories, columns, tex_replace):
+def create_html_code(directories, columns, tex_add):
 
 	print 'Starting collecting results...'
 
@@ -183,15 +181,23 @@ def create_html_code(directories, columns, tex_replace):
 					time_display = to_timeformat(t)
 					time_sum += t
 					if t < time_min: time_min = t
-					if t > time_max: time_max = t									
-			
+					if t > time_max: time_max = t
+				else:
+					#try to parse Tamarin-produced time format
+					res = re.match(TAMARIN_TIME_REGEX, line)
+					if res:
+						t = res.group(1)
+						t = to_secs (t)					
+						time_display = to_timeformat(t)
+						time_sum += t
+						if t < time_min: time_min = t
+						if t > time_max: time_max = t
+
 		if time_display:
 			results['Time'] = time_display
 		
 		global_results.append(results)
 
-	#global_results.sort(key=protocol_name)
-	
 	# move 'WARNING' column to the third position		
 	#if 'WARNING' in cols:
 	#	index = cols.index('WARNING')
@@ -231,68 +237,67 @@ def create_html_code(directories, columns, tex_replace):
 			verified.append(res['Protocol'])
 
 	#HTML code
-	html = '<!DOCTYPE html><html>\
-					<head><style>\
-					.main {\
-						font-size: .9em;\
-						margin: .8em;\
-						font-family: arial, sans-serif;\
-					}\
-					table {\
-						border-collapse: collapse;\
-					}\
-					td, th {\
-						text-align: left;\
-						padding: 10px;\
-					}\
-					th {\
-						background-color: #2471A3;\
-						color: white;\
-						font-weight: normal;\
-					}\
-					tr:nth-child(odd) {\
-						background-color: #f2f2f2;\
-					}\
-					tr:hover {\
-						background-color: #D6EAF8;\
-					}\
-					.summary {\
-						line-height: 1.2em;\
-					}\
-					.verified {\
-					}\
-					.verified {\
-						//background-color: #4CAF50;\
-						//color: white;\
-						font-weight: bold;\
-					}\
-					.green {\
-						color: green;\
-					}\
-					.red {\
-						color: red;\
-					}\
-					.x-scrollable {\
-						overflow-x: auto;\
-						white-space: nowrap;\
-					}\
-					.latex-code {padding: .5em;\
-						font-family: Consolas, "courier new";\
-						background-color: #f2f2f2;}\
-					</style></head>'
-	html += '<body><div class="main">'
+	html = 	'<!DOCTYPE html>\n<html>\n<head>\n<style>\n'\
+					+ '.main {\n'\
+					+ '	font-size: .9em;\n'\
+					+ '	margin: .8em;\n'\
+					+ '	font-family: arial, sans-serif;\n'\
+					+ '}\n'\
+					+ 'table {\n'\
+					+ '	border-collapse: collapse;\n'\
+					+ '}\n'\
+					+ 'td, th {\n'\
+					+ '	text-align: left;\n'\
+					+ '	padding: 10px;\n'\
+					+ '}\n'\
+					+ 'th {\n'\
+					+ '	background-color: #2471A3;\n'\
+					+ '	color: white;\n'\
+					+ '	font-weight: normal;\n'\
+					+ '}\n'\
+					+ 'tr:nth-child(odd) {\n'\
+					+ '	background-color: #f2f2f2;\n'\
+					+ '}\n'\
+					+ 'tr:hover {\n'\
+					+ '	background-color: #D6EAF8;\n'\
+					+ '}\n'\
+					+ '.summary {\n'\
+					+ '	line-height: 1.2em;\n'\
+					+ '}\n'\
+					+ '.verified {\n'\
+					+ '}\n'\
+					+ '.verified {\n'\
+					+ '	//background-color: #4CAF50;\n'\
+					+ '	//color: white;\n'\
+					+ '	font-weight: bold;\n'\
+					+ '}\n'\
+					+ '.green {\n'\
+					+ '	color: green;\n'\
+					+ '}\n'\
+					+ '.red {\n'\
+					+ '	color: red;\n'\
+					+ '}\n'\
+					+ '.x-scrollable {\n'\
+					+ '	overflow-x: auto;\n'\
+					+ '	white-space: nowrap;\n'\
+					+ '}\n'\
+					+ '.latex-code {padding: .5em;\n'\
+					+ '	font-family: Consolas, "courier new";\n'\
+					+ '	background-color: #f2f2f2;}\n'\
+					+ '</style>\n</head>\n'
+
+	html += '<body>\n<div class="main">\n'
 
 	#table ==============================================
-	html += '<h2>Analysis results</h2><div class="x-scrollable"><table>'
+	html += '<h2>Analysis results</h2>\n<div class="x-scrollable">\n<table>\n'
 	
 	#table head
-	html += '<tr>' + ''.join(['<th>' + col + '</th>' for col in cols]) + '</tr>'	
+	html += '<tr>' + ''.join(['<th>' + col + '</th>' for col in cols]) + '</tr>\n'	
 	#start constructing latex code
 	tex = '\\begin{tabular}{' + '&nbspl'*len(cols) +' }<br/>\\hline<br/>\
-				\\bfseries&nbsp' +\
-				'&nbsp\\bfseries&nbsp'.join(cols) + '\\\\<br/>\\hline<br/>'
+				\\bfseries ' +\
+				' & \\bfseries '.join(cols) + '\\\\<br/>\\hline<br/>\n'
 	
-	prev_proto_name = ''
 	idx = cols.index('Protocol')		
 	#table body
 	for results in global_results:
@@ -323,66 +328,62 @@ def create_html_code(directories, columns, tex_replace):
 
 		proto_name = results_list[idx]
 		#replace with latex annotations in file
-		if tex_replace != None:
-				if proto_name in tex_replace:
-					for (col_name, repl) in tex_replace[proto_name].iteritems():
+		if tex_add != None:
+				if proto_name in tex_add:
+					for (col_name, add) in tex_add[proto_name].iteritems():
 						try:
 							col_idx = cols.index(col_name)
-							latex_results[col_idx] = repl
+							latex_results[col_idx] = latex_results[col_idx] + add
 						except:
 							print "[Warning] Couldn't replace in tex, result of '"\
 										+ col_name +"' for protocol '"+ proto_name + "' does not exist"
 		
-		'''latex_results = latex_results[:idx]\
-										+ ['\\modelfont{' + latex_results[idx]+'}']\
-										+ latex_results[idx+1:]'''
-		#separate blocks
-		if differ_for_hline(prev_proto_name, proto_name): tex += '\\hline<br/>'
-		prev_proto_name = proto_name
-		
-		tex += '&nbsp&&nbsp'.join(latex_results) + '\\\\<br/>'
+		tex += '&nbsp&&nbsp'.join(latex_results) + '\\\\<br/>\n'
 
-	tex += '\\hline<br/>\\end{tabular}<br/>'
-	html += '</table></div>'
+	tex += '\\hline<br/>\\end{tabular}<br/>\n'
+	html += '</table>\n</div>\n'
 	
 	#summary ===============================================
-	html += '<h2>Summary</h2><div class="summary">\
-					<p><b>Protocols: </b> '\
+	html += '<h2>Summary</h2>\n<div class="summary">\n'\
+					+ '<p><b>Protocols: </b> '\
 					+ 'total ' + str(proto_count) + ', '\
-					+ 'verified ' + str(len(verified)) + '</p>'
+					+ 'verified ' + str(len(verified)) + '</p>\n'
 	
-	if proto_count != 0:		
-		ave = (0.0+rules_sum)/proto_count
-		html += '<p><b>Number of rules:</b> '\
-						+ "min " + str(rules_min) + ', '\
-						+ "ave " + str(int(ave)) + ', '\
-						+ "max " + str(rules_max) + '</p>'
+	if proto_count != 0:
+		if 'Rules' in cols:
+			ave = (0.0+rules_sum)/proto_count
+			html += '<p><b>Number of rules:</b> '\
+							+ "min " + str(rules_min) + ', '\
+							+ "ave " + str(int(ave)) + ', '\
+							+ "max " + str(rules_max) + '</p>\n'
 		
-		if loc_sum != 0:
+		if 'LoC' in cols and loc_sum != 0:
 			ave = (0.0+loc_sum)/proto_count
 			html += '<p><b>Lines of code:</b> '\
 						+ "min " + str(loc_min) + ', '\
 						+ "ave " + str(int(ave)) + ', '\
-						+ "max " + str(loc_max) + '</p>'
+						+ "max " + str(loc_max) + '</p>\n'
 		
-		ave = time_sum/proto_count
-		html += '<p><b>Time:</b> '\
-					+ "min " + to_timeformat(time_min) + ', '\
-					+ "ave " + to_timeformat(ave) + ', '\
-					+ "max " + to_timeformat(time_max) + ', '\
-					+ "sum " + to_timeformat(time_sum) + '</p>'
+		if 'Time' in cols:
+			ave = time_sum/proto_count
+			html += '<p><b>Time:</b> '\
+							+ "min " + to_timeformat(time_min) + ', '\
+							+ "ave " + to_timeformat(ave) + ', '\
+							+ "max " + to_timeformat(time_max) + ', '\
+							+ "sum " + to_timeformat(time_sum) + '</p>\n'
+	
 	#html += '<p><b>System info:</b> " + str(platform.uname()) + '</p>'
-	html += '<p><b>Folder(s):</b> ' + ', '.join(directories) + '</p>'
+	#html += '<p><b>Folder(s):</b> ' + ', '.join(directories) + '</p>'
 	#html += '<p><b>Report generated on:</b> '\
 	#				+ datetime.now().strftime("%Y-%m-%d %H:%M:%S") + '</p>'					
-	html += '</div>'
+	html += '</div>\n'
 
 		
 	#latex code ========================================
-	html += '<h2>Latex code</h2><div class="latex-code x-scrollable">'
+	html += '<h2>Latex code</h2>\n<div class="latex-code x-scrollable">\n'
 	tex = tex.replace('_', '\\_')
-	tex = '%define your \\falsified and \\verified commands here<br/>' + tex
-	html += tex +'</div></div></body></html>'
+	tex = '%define your \\falsified and \\verified commands here<br/>\n' + tex
+	html += tex +'</div>\n</div>\n</body>\n</html>'
 	return html
 
 def main():
@@ -391,8 +392,8 @@ def main():
 	#defaults
 	directories = set()
 	lemmas = 'all'
-	output = None
-	tex_replace = {}
+	output = 'results.html'
+	tex_add = {}
 	
 	for idx in range(1, len(sys.argv)):
 		arg = sys.argv[idx]
@@ -416,23 +417,23 @@ def main():
 		elif arg.startswith('--output='):
 			output = arg.split('=',1)[1]
 		
-		elif arg.startswith('--tex-replace='):
+		elif arg.startswith('--tex-add='):
 			file = arg.split('=',1)[1]
 			try:
 				for line in open(file).readlines():
 					if line.strip() == '' or line.startswith('#'):
 						continue
-					(proto, lemma, repl) = line.split(' ',2)
-					if proto not in tex_replace:
-						tex_replace[proto] = {}					
-					if lemma not in tex_replace[proto]:
-						tex_replace[proto][lemma] = {}
-					tex_replace[proto][lemma] = repl[:-1]
+					(proto, lemma, add) = line.split(' ',2)
+					if proto not in tex_add:
+						tex_add[proto] = {}					
+					if lemma not in tex_add[proto]:
+						tex_add[proto][lemma] = {}
+					tex_add[proto][lemma] = add[:-1]
 			except Exception as e:
 				print '[Warning] Something went wrong with the tex notes file:', file\
 							+ ', so it will be ignored' 
 				print e
-				tex_replace = {}
+				tex_add = {}
 		
 		else:
 			directories.add(arg)
@@ -440,13 +441,7 @@ def main():
 	if len(directories) == 0:
 		directories = ['./']
 
-	if not output:
-		tail = '-'.join([os.path.abspath(dir).split('/')[-1] for dir in directories])
-		if tail != '':
-			tail = '-' + tail
-		output = 'results' + tail + '.html'
-
-	html = create_html_code(directories, lemmas, tex_replace)
+	html = create_html_code(directories, lemmas, tex_add)
 	
 	if html:
 		print 'Writing output to:', os.path.basename(output)

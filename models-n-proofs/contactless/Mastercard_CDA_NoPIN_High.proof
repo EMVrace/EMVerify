@@ -117,8 +117,7 @@ rule (modulo E) Create_Card:
   ]->
    [
    !AIP( ~PAN, <auth, $furtherData> ), !AID( ~PAN, 'Mastercard' ),
-   !SupportedCVM( ~PAN, CVM ), !Shk( ~PAN, ~MK ),
-   !IssuingBank( ~PAN, $Bank ),
+   !Shk( ~PAN, ~MK ), !IssuingBank( ~PAN, $Bank ),
    Set_Records( ~PAN, ~expDate, $CA, certBank,
                 sign(<'03', ~PAN, ~expDate, auth, $furtherData>, ~privkBank), CVM
    ),
@@ -225,7 +224,7 @@ rule (modulo E) Card_Responds_To_ReadRecord_NotDDA:
    !Records( ~PAN, records ), In( <'READ_RECORD', 'AFL'> )
    ]
   --[ NEq( fst(AIP), 'DDA' ) ]->
-   [ Out( records ), Card_Ready_For_Transaction( ~PAN, PDOL, ATC ) ]
+   [ Out( records ), Card_Ready_For_Cryptogram( ~PAN, PDOL, ATC ) ]
 
   /*
   rule (modulo AC) Card_Responds_To_ReadRecord_NotDDA:
@@ -234,7 +233,7 @@ rule (modulo E) Card_Responds_To_ReadRecord_NotDDA:
      !Records( ~PAN, records ), In( <'READ_RECORD', 'AFL'> )
      ]
     --[ NEq( z, 'DDA' ) ]->
-     [ Out( records ), Card_Ready_For_Transaction( ~PAN, PDOL, ATC ) ]
+     [ Out( records ), Card_Ready_For_Cryptogram( ~PAN, PDOL, ATC ) ]
     variants (modulo AC)
     1. AIP   = AIP.10
        z     = fst(AIP.10)
@@ -893,7 +892,7 @@ rule (modulo E) Card_Responds_To_InternalAuthenticate:
   -->
    [
    Out( <~nc, sign(<'05', ~nc, DDOL>, ~privkCard)> ),
-   Card_Ready_For_Transaction( ~PAN, PDOL, ATC )
+   Card_Ready_For_Cryptogram( ~PAN, PDOL, ATC )
    ]
 
   /* has exactly the trivial AC variant */
@@ -956,9 +955,9 @@ rule (modulo E) Terminal_Processes_CVM_NoPIN:
    ]
   -->
    [
-   Terminal_Ready_For_Transaction( $Terminal, ~PAN, $Bank, $CA,
-                                   <$amount, country, currency, date, type, ~UN>, AIP, pubkBank, pubkCard,
-                                   'NoPIN', 'Null', CVM
+   Terminal_Ready_For_Cryptogram( $Terminal, ~PAN, $Bank, $CA,
+                                  <$amount, country, currency, date, type, ~UN>, AIP, pubkBank, pubkCard,
+                                  'NoPIN', 'Null', CVM
    )
    ]
 
@@ -974,9 +973,9 @@ rule (modulo E) Terminal_Processes_CVM_OnlinePIN:
    ]
   -->
    [
-   Terminal_Ready_For_Transaction( $Terminal, ~PAN, $Bank, $CA,
-                                   <$amount, country, currency, date, type, ~UN>, AIP, pubkBank, pubkCard,
-                                   'OnlinePIN', aenc(PIN, pubkBank), 'OnlinePIN'
+   Terminal_Ready_For_Cryptogram( $Terminal, ~PAN, $Bank, $CA,
+                                  <$amount, country, currency, date, type, ~UN>, AIP, pubkBank, pubkCard,
+                                  'OnlinePIN', aenc(PIN, pubkBank), 'OnlinePIN'
    )
    ]
 
@@ -992,9 +991,9 @@ rule (modulo E) Terminal_Processes_CVM_ODCVM:
    ]
   -->
    [
-   Terminal_Ready_For_Transaction( $Terminal, ~PAN, $Bank, $CA,
-                                   <$amount, country, currency, date, type, ~UN>,
-                                   <auth, 'ODCVM', furtherData2>, pubkBank, pubkCard, 'ODCVM', 'Null', CVM
+   Terminal_Ready_For_Cryptogram( $Terminal, ~PAN, $Bank, $CA,
+                                  <$amount, country, currency, date, type, ~UN>,
+                                  <auth, 'ODCVM', furtherData2>, pubkBank, pubkCard, 'ODCVM', 'Null', CVM
    )
    ]
 
@@ -1002,8 +1001,8 @@ rule (modulo E) Terminal_Processes_CVM_ODCVM:
 
 rule (modulo E) Terminal_Sends_GenerateAC_NoCDA:
    [
-   Terminal_Ready_For_Transaction( $Terminal, ~PAN, $Bank, $CA, PDOL, AIP,
-                                   pubkBank, pubkCard, CVM, encPIN, supportedCVM
+   Terminal_Ready_For_Cryptogram( $Terminal, ~PAN, $Bank, $CA, PDOL, AIP,
+                                  pubkBank, pubkCard, CVM, encPIN, supportedCVM
    ),
    In( acType )
    ]
@@ -1019,8 +1018,8 @@ rule (modulo E) Terminal_Sends_GenerateAC_NoCDA:
   /*
   rule (modulo AC) Terminal_Sends_GenerateAC_NoCDA:
      [
-     Terminal_Ready_For_Transaction( $Terminal, ~PAN, $Bank, $CA, PDOL, AIP,
-                                     pubkBank, pubkCard, CVM, encPIN, supportedCVM
+     Terminal_Ready_For_Cryptogram( $Terminal, ~PAN, $Bank, $CA, PDOL, AIP,
+                                    pubkBank, pubkCard, CVM, encPIN, supportedCVM
      ),
      In( acType )
      ]
@@ -1042,8 +1041,8 @@ rule (modulo E) Terminal_Sends_GenerateAC_NoCDA:
 
 rule (modulo E) Terminal_Sends_GenerateAC_CDA:
    [
-   Terminal_Ready_For_Transaction( $Terminal, ~PAN, $Bank, $CA, PDOL,
-                                   <'CDA', furtherData>, pubkBank, pubkCard, CVM, encPIN, supportedCVM
+   Terminal_Ready_For_Cryptogram( $Terminal, ~PAN, $Bank, $CA, PDOL,
+                                  <'CDA', furtherData>, pubkBank, pubkCard, CVM, encPIN, supportedCVM
    ),
    In( acType )
    ]
@@ -1060,12 +1059,12 @@ rule (modulo E) Terminal_Sends_GenerateAC_CDA:
 
 rule (modulo E) Card_Responds_To_GenerateAC_NoCDA:
    [
-   Card_Ready_For_Transaction( ~PAN, PDOL, ATC ), !AIP( ~PAN, AIP ),
+   Card_Ready_For_Cryptogram( ~PAN, PDOL, ATC ), !AIP( ~PAN, AIP ),
    !Shk( ~PAN, ~MK ), !IssuingBank( ~PAN, $Bank ),
    In( <'GENERATE_AC', CID, 'NoCDA', 'TVR', CVM, 'HHMMSS'> )
    ]
   --[
-  Running( ~PAN, 'Null',
+  Running( ~PAN, 'Terminal',
            <'Card', 'Terminal', ~PAN, AIP, CVM, <PDOL, 'TVR', CVM, 'HHMMSS'>, ATC, 
             MAC(f(~MK, ATC), <PDOL, 'TVR', CVM, 'HHMMSS'>, AIP, ATC, <'IAD', CID>), 
             'IAD', CID>
@@ -1087,15 +1086,15 @@ rule (modulo E) Card_Responds_To_GenerateAC_NoCDA:
 
 rule (modulo E) Card_Responds_To_GenerateAC_CDA:
    [
-   Card_Ready_For_Transaction( ~PAN,
-                               <amount, country, currency, date, type, UN>, ATC
+   Card_Ready_For_Cryptogram( ~PAN,
+                              <amount, country, currency, date, type, UN>, ATC
    ),
    !LtkCard( ~PAN, ~privkCard ), !AIP( ~PAN, <'CDA', furtherData> ),
    !Shk( ~PAN, ~MK ), !IssuingBank( ~PAN, $Bank ), Fr( ~nc ),
    In( <'GENERATE_AC', CID, 'CDA', 'TVR', CVM, 'HHMMSS'> )
    ]
   --[
-  Running( ~PAN, ~nc,
+  Running( ~PAN, 'Terminal',
            <'Card', 'Terminal', ~PAN, <'CDA', furtherData>, CVM, 
             <<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>, 
             ATC, 
@@ -1298,7 +1297,7 @@ rule (modulo E) Terminal_Commits_TC:
   TerminalAccepts( <~PAN, <'CDA', furtherData>, CVM, 
                     <<$amount, country, currency, date, type, ~UN>, CDOL1>, ATC, AC, IAD>
   ),
-  Commit( nc, ~PAN,
+  Commit( 'Terminal', ~PAN,
           <'Card', 'Terminal', ~PAN, <'CDA', furtherData>, CVM, 
            <<$amount, country, currency, date, type, ~UN>, CDOL1>, ATC, AC, IAD>
   ),
@@ -1424,7 +1423,7 @@ rule (modulo E) Terminal_Commits_ARQC:
   TerminalAccepts( <~PAN, <'CDA', furtherData>, CVM, 
                     <<$amount, country, currency, date, type, ~UN>, CDOL1>, ATC, AC, IAD>
   ),
-  Commit( nc, ~PAN,
+  Commit( 'Terminal', ~PAN,
           <'Card', 'Terminal', ~PAN, <'CDA', furtherData>, CVM, 
            <<$amount, country, currency, date, type, ~UN>, CDOL1>, ATC, AC, IAD>
   ),
@@ -1503,7 +1502,7 @@ rule (modulo E) Card_Responds_To_GPO_EMV_Visa:
    ]
   --[
   OneCard( ), Once( <~PAN, ATC, 'Card'> ), NEq( CVM, 'CDCVM' ),
-  Running( ~PAN, 'Null',
+  Running( ~PAN, 'Terminal',
            <'Card', 'Terminal', ~PAN, <'EMV', $furtherData>, CVM, 
             <<acType, CVM>, amount, country, currency, date, type, UN>, ATC, 
             MAC(f(~MK, ATC),
@@ -1604,7 +1603,7 @@ rule (modulo E) Card_Responds_To_ReadRecord_DDA_Visa:
    !IssuingBank( ~PAN, $Bank ), In( <'READ_RECORD', 'AFL'> )
    ]
   --[
-  Running( ~PAN, ~nc,
+  Running( ~PAN, 'Terminal',
            <'Card', 'Terminal', ~PAN, <'DDA', furtherData>, CTQ, 
             <TTQ, amount, country, currency, date, type, UN>, ATC, AC, IAD>
   ),
@@ -2377,9 +2376,10 @@ restriction compatibility:
 
 lemma executable:
   exists-trace
-  "∃ Bank PAN nc t #i #j #k #l.
-    (((((((((#i < #j) ∧ (Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i)) ∧
-           (Commit( nc, PAN, <'Card', 'Terminal', t> ) @ #j)) ∧
+  "∃ Bank PAN t #i #j #k #l.
+    (((((((((#i < #j) ∧
+            (Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i)) ∧
+           (Commit( 'Terminal', PAN, <'Card', 'Terminal', t> ) @ #j)) ∧
           (#k < #l)) ∧
          (Running( PAN, Bank, <'Card', 'Bank', t> ) @ #k)) ∧
         (Commit( Bank, PAN, <'Card', 'Bank', t> ) @ #l)) ∧
@@ -2389,9 +2389,9 @@ lemma executable:
     (¬(∃ A #a. Compromise( A ) @ #a))"
 /*
 guarded formula characterizing all satisfying traces:
-"∃ Bank PAN nc t #i #j #k #l.
-  (Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i) ∧
-  (Commit( nc, PAN, <'Card', 'Terminal', t> ) @ #j) ∧
+"∃ Bank PAN t #i #j #k #l.
+  (Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i) ∧
+  (Commit( 'Terminal', PAN, <'Card', 'Terminal', t> ) @ #j) ∧
   (Running( PAN, Bank, <'Card', 'Bank', t> ) @ #k) ∧
   (Commit( Bank, PAN, <'Card', 'Bank', t> ) @ #l)
  ∧
@@ -2403,7 +2403,7 @@ guarded formula characterizing all satisfying traces:
   (∀ A #a. (Compromise( A ) @ #a) ⇒ ⊥)"
 */
 simplify
-solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
+solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
   case Card_Responds_To_GPO_EMV_Visa
   solve( !Shk( ~PAN, ~MK ) ▶₁ #i )
     case Create_Card
@@ -2421,7 +2421,7 @@ solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
           case Create_Card_Visa
           solve( !ATC( ATC ) ▶₅ #i )
             case Generate_ATC
-            by solve( Commit( 'Null', ~PAN,
+            by solve( Commit( 'Terminal', ~PAN,
                               <'Card', 'Terminal', ~PAN, <'EMV', $furtherData>, CVM, 
                                <<acType, CVM>, amount, country, currency, date, type, UN>, ~ATC, 
                                MAC(f(~MK, ~ATC),
@@ -2440,8 +2440,8 @@ next
     case Create_Card
     solve( !IssuingBank( ~PAN, $Bank ) ▶₄ #i )
       case Create_Card
-      solve( Card_Ready_For_Transaction( ~PAN,
-                                         <amount, country, currency, date, type, UN>, ATC
+      solve( Card_Ready_For_Cryptogram( ~PAN,
+                                        <amount, country, currency, date, type, UN>, ATC
              ) ▶₀ #i )
         case Card_Responds_To_InternalAuthenticate
         solve( !LtkCard( ~PAN, ~privkCard ) ▶₁ #i )
@@ -2457,7 +2457,7 @@ next
           case Set_Records_NotSDA
           solve( !AIP( ~PAN, <'CDA', furtherData> ) ▶₂ #i )
             case Create_Card
-            solve( Commit( ~nc, ~PAN,
+            solve( Commit( 'Terminal', ~PAN,
                            <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, CVM, 
                             <<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>, 
                             ~ATC, 
@@ -2499,7 +2499,7 @@ next
                 by contradiction /* from formulas */
               next
                 case Generate_ATC
-                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, ~nc, 'ARQC',
+                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc.1, 'ARQC',
                                                 <~PAN, <'CDA', $furtherData>, CVM, 
                                                  <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                                   'HHMMSS'>, 
@@ -2513,7 +2513,7 @@ next
                           ) ▶₀ #j )
               next
                 case Terminal_Sends_GPO_High_Visa
-                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, ~nc, 'ARQC',
+                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc.1, 'ARQC',
                                                 <~PAN, <'CDA', $furtherData>, CVM, 
                                                  <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                                   'HHMMSS'>, 
@@ -2527,7 +2527,7 @@ next
                           ) ▶₀ #j )
               next
                 case Terminal_Sends_GPO_Low_Visa
-                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, ~nc, 'ARQC',
+                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc.1, 'ARQC',
                                                 <~PAN, <'CDA', $furtherData>, CVM, 
                                                  <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                                   'HHMMSS'>, 
@@ -2541,7 +2541,7 @@ next
                           ) ▶₀ #j )
               next
                 case Terminal_Sends_GPO_case_1
-                solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, ~nc, 'ARQC',
+                solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc.1, 'ARQC',
                                              <~PAN, <'CDA', $furtherData>, CVM, 
                                               <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                                'HHMMSS'>, 
@@ -2556,39 +2556,33 @@ next
                   case Terminal_Receives_AC_CDA
                   solve( !KU( ~ATC ) @ #vk.37 )
                     case Card_Responds_To_GenerateAC_CDA
-                    solve( !KU( ~nc ) @ #vk.44 )
-                      case Card_Responds_To_GenerateAC_CDA
-                      solve( !KU( ~PAN ) @ #vk.50 )
-                        case Card_Responds_To_ReadRecord_NotDDA_case_1
-                        by solve( !Value( $amount, 'High' ) ▶₁ #j )
-                      next
-                        case Card_Responds_To_ReadRecord_NotDDA_case_2
-                        by solve( !Value( $amount, 'High' ) ▶₁ #j )
-                      next
-                        case Compromise_Card
-                        by contradiction /* from formulas */
-                      qed
+                    solve( !KU( ~PAN ) @ #vk.48 )
+                      case Card_Responds_To_ReadRecord_NotDDA_case_1
+                      by solve( !Value( $amount, 'High' ) ▶₁ #j )
+                    next
+                      case Card_Responds_To_ReadRecord_NotDDA_case_2
+                      by solve( !Value( $amount, 'High' ) ▶₁ #j )
+                    next
+                      case Compromise_Card
+                      by contradiction /* from formulas */
                     qed
                   next
                     case Generate_ATC
-                    solve( !KU( ~nc ) @ #vk.44 )
-                      case Card_Responds_To_GenerateAC_CDA
-                      solve( !KU( ~PAN ) @ #vk.50 )
-                        case Card_Responds_To_ReadRecord_NotDDA_case_1
-                        by solve( !Value( $amount, 'High' ) ▶₁ #j )
-                      next
-                        case Card_Responds_To_ReadRecord_NotDDA_case_2
-                        by solve( !Value( $amount, 'High' ) ▶₁ #j )
-                      next
-                        case Compromise_Card
-                        by contradiction /* from formulas */
-                      qed
+                    solve( !KU( ~PAN ) @ #vk.48 )
+                      case Card_Responds_To_ReadRecord_NotDDA_case_1
+                      by solve( !Value( $amount, 'High' ) ▶₁ #j )
+                    next
+                      case Card_Responds_To_ReadRecord_NotDDA_case_2
+                      by solve( !Value( $amount, 'High' ) ▶₁ #j )
+                    next
+                      case Compromise_Card
+                      by contradiction /* from formulas */
                     qed
                   qed
                 qed
               next
                 case Terminal_Sends_GPO_case_2
-                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, ~nc, 'ARQC',
+                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc.1, 'ARQC',
                                                 <~PAN, <'CDA', $furtherData>, CVM, 
                                                  <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                                   'HHMMSS'>, 
@@ -2634,7 +2628,7 @@ next
                   by contradiction /* from formulas */
                 next
                   case Generate_ATC
-                  by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, ~nc, 'ARQC',
+                  by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc.1, 'ARQC',
                                                   <~PAN, <'CDA', $furtherData>, CVM, 
                                                    <<$amount, country, currency, date, type, ~UN>, 'TVR', 
                                                     CVM, 'HHMMSS'>, 
@@ -2651,7 +2645,7 @@ next
                   by contradiction /* cyclic */
                 next
                   case fresh
-                  by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, ~nc, 'ARQC',
+                  by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc.1, 'ARQC',
                                                   <~PAN, <'CDA', $furtherData>, CVM, 
                                                    <<$amount, country, currency, date, type, ~UN>, 'TVR', 
                                                     CVM, 'HHMMSS'>, 
@@ -2698,7 +2692,7 @@ next
                   by contradiction /* from formulas */
                 next
                   case Generate_ATC
-                  by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, ~nc, 'ARQC',
+                  by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc.1, 'ARQC',
                                                   <~PAN, <'CDA', $furtherData>, CVM, 
                                                    <<$amount, country, currency, date, type, ~UN>, 'TVR', 
                                                     CVM, 'HHMMSS'>, 
@@ -2715,7 +2709,7 @@ next
                   by contradiction /* cyclic */
                 next
                   case fresh
-                  by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, ~nc, 'ARQC',
+                  by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc.1, 'ARQC',
                                                   <~PAN, <'CDA', $furtherData>, CVM, 
                                                    <<$amount, country, currency, date, type, ~UN>, 'TVR', 
                                                     CVM, 'HHMMSS'>, 
@@ -2730,7 +2724,7 @@ next
                 qed
               next
                 case fresh
-                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, ~nc, 'ARQC',
+                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc.1, 'ARQC',
                                                 <~PAN, <'CDA', $furtherData>, CVM, 
                                                  <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                                   'HHMMSS'>, 
@@ -2777,7 +2771,7 @@ next
                 by contradiction /* from formulas */
               next
                 case Generate_ATC
-                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, ~nc, 'TC',
+                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc.1, 'TC',
                                                 <~PAN, <'CDA', $furtherData>, CVM, 
                                                  <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                                   'HHMMSS'>, 
@@ -2791,7 +2785,7 @@ next
                           ) ▶₀ #j )
               next
                 case Terminal_Sends_GPO_High_Visa
-                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, ~nc, 'TC',
+                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc.1, 'TC',
                                                 <~PAN, <'CDA', $furtherData>, CVM, 
                                                  <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                                   'HHMMSS'>, 
@@ -2805,7 +2799,7 @@ next
                           ) ▶₀ #j )
               next
                 case Terminal_Sends_GPO_Low_Visa
-                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, ~nc, 'TC',
+                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc.1, 'TC',
                                                 <~PAN, <'CDA', $furtherData>, CVM, 
                                                  <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                                   'HHMMSS'>, 
@@ -2819,7 +2813,7 @@ next
                           ) ▶₀ #j )
               next
                 case Terminal_Sends_GPO_case_1
-                solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, ~nc, 'TC',
+                solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc.1, 'TC',
                                              <~PAN, <'CDA', $furtherData>, CVM, 
                                               <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                                'HHMMSS'>, 
@@ -2834,39 +2828,33 @@ next
                   case Terminal_Receives_AC_CDA
                   solve( !KU( ~ATC ) @ #vk.37 )
                     case Card_Responds_To_GenerateAC_CDA
-                    solve( !KU( ~nc ) @ #vk.44 )
-                      case Card_Responds_To_GenerateAC_CDA
-                      solve( !KU( ~PAN ) @ #vk.50 )
-                        case Card_Responds_To_ReadRecord_NotDDA_case_1
-                        by solve( !Value( $amount, 'High' ) ▶₁ #j )
-                      next
-                        case Card_Responds_To_ReadRecord_NotDDA_case_2
-                        by solve( !Value( $amount, 'High' ) ▶₁ #j )
-                      next
-                        case Compromise_Card
-                        by contradiction /* from formulas */
-                      qed
+                    solve( !KU( ~PAN ) @ #vk.48 )
+                      case Card_Responds_To_ReadRecord_NotDDA_case_1
+                      by solve( !Value( $amount, 'High' ) ▶₁ #j )
+                    next
+                      case Card_Responds_To_ReadRecord_NotDDA_case_2
+                      by solve( !Value( $amount, 'High' ) ▶₁ #j )
+                    next
+                      case Compromise_Card
+                      by contradiction /* from formulas */
                     qed
                   next
                     case Generate_ATC
-                    solve( !KU( ~nc ) @ #vk.44 )
-                      case Card_Responds_To_GenerateAC_CDA
-                      solve( !KU( ~PAN ) @ #vk.50 )
-                        case Card_Responds_To_ReadRecord_NotDDA_case_1
-                        by solve( !Value( $amount, 'High' ) ▶₁ #j )
-                      next
-                        case Card_Responds_To_ReadRecord_NotDDA_case_2
-                        by solve( !Value( $amount, 'High' ) ▶₁ #j )
-                      next
-                        case Compromise_Card
-                        by contradiction /* from formulas */
-                      qed
+                    solve( !KU( ~PAN ) @ #vk.48 )
+                      case Card_Responds_To_ReadRecord_NotDDA_case_1
+                      by solve( !Value( $amount, 'High' ) ▶₁ #j )
+                    next
+                      case Card_Responds_To_ReadRecord_NotDDA_case_2
+                      by solve( !Value( $amount, 'High' ) ▶₁ #j )
+                    next
+                      case Compromise_Card
+                      by contradiction /* from formulas */
                     qed
                   qed
                 qed
               next
                 case Terminal_Sends_GPO_case_2
-                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, ~nc, 'TC',
+                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc.1, 'TC',
                                                 <~PAN, <'CDA', $furtherData>, CVM, 
                                                  <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                                   'HHMMSS'>, 
@@ -2912,7 +2900,7 @@ next
                   by contradiction /* from formulas */
                 next
                   case Generate_ATC
-                  by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, ~nc, 'TC',
+                  by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc.1, 'TC',
                                                   <~PAN, <'CDA', $furtherData>, CVM, 
                                                    <<$amount, country, currency, date, type, ~UN>, 'TVR', 
                                                     CVM, 'HHMMSS'>, 
@@ -2929,7 +2917,7 @@ next
                   by contradiction /* cyclic */
                 next
                   case fresh
-                  by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, ~nc, 'TC',
+                  by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc.1, 'TC',
                                                   <~PAN, <'CDA', $furtherData>, CVM, 
                                                    <<$amount, country, currency, date, type, ~UN>, 'TVR', 
                                                     CVM, 'HHMMSS'>, 
@@ -2976,7 +2964,7 @@ next
                   by contradiction /* from formulas */
                 next
                   case Generate_ATC
-                  by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, ~nc, 'TC',
+                  by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc.1, 'TC',
                                                   <~PAN, <'CDA', $furtherData>, CVM, 
                                                    <<$amount, country, currency, date, type, ~UN>, 'TVR', 
                                                     CVM, 'HHMMSS'>, 
@@ -2993,7 +2981,7 @@ next
                   by contradiction /* cyclic */
                 next
                   case fresh
-                  by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, ~nc, 'TC',
+                  by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc.1, 'TC',
                                                   <~PAN, <'CDA', $furtherData>, CVM, 
                                                    <<$amount, country, currency, date, type, ~UN>, 'TVR', 
                                                     CVM, 'HHMMSS'>, 
@@ -3008,7 +2996,7 @@ next
                 qed
               next
                 case fresh
-                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, ~nc, 'TC',
+                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc.1, 'TC',
                                                 <~PAN, <'CDA', $furtherData>, CVM, 
                                                  <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                                   'HHMMSS'>, 
@@ -3030,8 +3018,8 @@ next
     case Create_Card_Visa
     solve( !IssuingBank( ~PAN, $Bank ) ▶₄ #i )
       case Create_Card_Visa
-      by solve( Card_Ready_For_Transaction( ~PAN,
-                                            <amount, country, currency, date, type, UN>, ATC
+      by solve( Card_Ready_For_Cryptogram( ~PAN,
+                                           <amount, country, currency, date, type, UN>, ATC
                 ) ▶₀ #i )
     qed
   qed
@@ -3043,9 +3031,9 @@ next
       case Create_Card
       solve( !IssuingBank( ~PAN, $Bank ) ▶₃ #i )
         case Create_Card
-        solve( Card_Ready_For_Transaction( ~PAN, PDOL, ATC ) ▶₀ #i )
+        solve( Card_Ready_For_Cryptogram( ~PAN, PDOL, ATC ) ▶₀ #i )
           case Card_Responds_To_InternalAuthenticate
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, CVM, 
                              <PDOL, 'TVR', CVM, 'HHMMSS'>, ~ATC, 
                              MAC(f(~MK, ~ATC), <PDOL, 'TVR', CVM, 'HHMMSS'>, <'DDA', $furtherData>,
@@ -3054,7 +3042,7 @@ next
                     ) @ #j )
         next
           case Card_Responds_To_ReadRecord_NotDDA_case_1
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'SDA', $furtherData>, CVM, 
                              <PDOL, 'TVR', CVM, 'HHMMSS'>, ~ATC, 
                              MAC(f(~MK, ~ATC), <PDOL, 'TVR', CVM, 'HHMMSS'>, <'SDA', $furtherData>,
@@ -3063,7 +3051,7 @@ next
                     ) @ #j )
         next
           case Card_Responds_To_ReadRecord_NotDDA_case_2
-          solve( Commit( 'Null', ~PAN,
+          solve( Commit( 'Terminal', ~PAN,
                          <'Card', 'Terminal', ~PAN, <auth, $furtherData>, CVM, 
                           <PDOL, 'TVR', CVM, 'HHMMSS'>, ~ATC, 
                           MAC(f(~MK, ~ATC), <PDOL, 'TVR', CVM, 'HHMMSS'>, <auth, $furtherData>,
@@ -3100,7 +3088,7 @@ next
               by contradiction /* from formulas */
             next
               case Generate_ATC
-              by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, 'Null', 'ARQC',
+              by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc, 'ARQC',
                                               <~PAN, <'CDA', $furtherData>, CVM, 
                                                <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                                 'HHMMSS'>, 
@@ -3114,7 +3102,7 @@ next
                         ) ▶₀ #j )
             next
               case Terminal_Sends_GPO_High_Visa
-              by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, 'Null', 'ARQC',
+              by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc, 'ARQC',
                                               <~PAN, <'CDA', $furtherData>, CVM, 
                                                <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                                 'HHMMSS'>, 
@@ -3128,7 +3116,7 @@ next
                         ) ▶₀ #j )
             next
               case Terminal_Sends_GPO_Low_Visa
-              by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, 'Null', 'ARQC',
+              by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc, 'ARQC',
                                               <~PAN, <'CDA', $furtherData>, CVM, 
                                                <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                                 'HHMMSS'>, 
@@ -3142,7 +3130,7 @@ next
                         ) ▶₀ #j )
             next
               case Terminal_Sends_GPO_case_1
-              solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, 'Null', 'ARQC',
+              solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc, 'ARQC',
                                            <~PAN, <'CDA', $furtherData>, CVM, 
                                             <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                              'HHMMSS'>, 
@@ -3183,7 +3171,7 @@ next
               qed
             next
               case Terminal_Sends_GPO_case_2
-              by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, 'Null', 'ARQC',
+              by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc, 'ARQC',
                                               <~PAN, <'CDA', $furtherData>, CVM, 
                                                <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                                 'HHMMSS'>, 
@@ -3226,7 +3214,7 @@ next
                 by contradiction /* from formulas */
               next
                 case Generate_ATC
-                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, 'Null', 'ARQC',
+                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc, 'ARQC',
                                                 <~PAN, <'CDA', $furtherData>, CVM, 
                                                  <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                                   'HHMMSS'>, 
@@ -3243,7 +3231,7 @@ next
                 by contradiction /* cyclic */
               next
                 case fresh
-                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, 'Null', 'ARQC',
+                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc, 'ARQC',
                                                 <~PAN, <'CDA', $furtherData>, CVM, 
                                                  <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                                   'HHMMSS'>, 
@@ -3287,7 +3275,7 @@ next
                 by contradiction /* from formulas */
               next
                 case Generate_ATC
-                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, 'Null', 'ARQC',
+                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc, 'ARQC',
                                                 <~PAN, <'CDA', $furtherData>, CVM, 
                                                  <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                                   'HHMMSS'>, 
@@ -3304,7 +3292,7 @@ next
                 by contradiction /* cyclic */
               next
                 case fresh
-                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, 'Null', 'ARQC',
+                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc, 'ARQC',
                                                 <~PAN, <'CDA', $furtherData>, CVM, 
                                                  <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                                   'HHMMSS'>, 
@@ -3319,7 +3307,7 @@ next
               qed
             next
               case fresh
-              by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, 'Null', 'ARQC',
+              by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc, 'ARQC',
                                               <~PAN, <'CDA', $furtherData>, CVM, 
                                                <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                                 'HHMMSS'>, 
@@ -3363,7 +3351,7 @@ next
               by contradiction /* from formulas */
             next
               case Generate_ATC
-              by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, 'Null', 'TC',
+              by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc, 'TC',
                                               <~PAN, <'CDA', $furtherData>, CVM, 
                                                <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                                 'HHMMSS'>, 
@@ -3377,7 +3365,7 @@ next
                         ) ▶₀ #j )
             next
               case Terminal_Sends_GPO_High_Visa
-              by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, 'Null', 'TC',
+              by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc, 'TC',
                                               <~PAN, <'CDA', $furtherData>, CVM, 
                                                <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                                 'HHMMSS'>, 
@@ -3391,7 +3379,7 @@ next
                         ) ▶₀ #j )
             next
               case Terminal_Sends_GPO_Low_Visa
-              by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, 'Null', 'TC',
+              by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc, 'TC',
                                               <~PAN, <'CDA', $furtherData>, CVM, 
                                                <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                                 'HHMMSS'>, 
@@ -3405,7 +3393,7 @@ next
                         ) ▶₀ #j )
             next
               case Terminal_Sends_GPO_case_1
-              solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, 'Null', 'TC',
+              solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc, 'TC',
                                            <~PAN, <'CDA', $furtherData>, CVM, 
                                             <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                              'HHMMSS'>, 
@@ -3446,7 +3434,7 @@ next
               qed
             next
               case Terminal_Sends_GPO_case_2
-              by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, 'Null', 'TC',
+              by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc, 'TC',
                                               <~PAN, <'CDA', $furtherData>, CVM, 
                                                <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                                 'HHMMSS'>, 
@@ -3489,7 +3477,7 @@ next
                 by contradiction /* from formulas */
               next
                 case Generate_ATC
-                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, 'Null', 'TC',
+                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc, 'TC',
                                                 <~PAN, <'CDA', $furtherData>, CVM, 
                                                  <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                                   'HHMMSS'>, 
@@ -3506,7 +3494,7 @@ next
                 by contradiction /* cyclic */
               next
                 case fresh
-                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, 'Null', 'TC',
+                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc, 'TC',
                                                 <~PAN, <'CDA', $furtherData>, CVM, 
                                                  <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                                   'HHMMSS'>, 
@@ -3550,7 +3538,7 @@ next
                 by contradiction /* from formulas */
               next
                 case Generate_ATC
-                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, 'Null', 'TC',
+                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc, 'TC',
                                                 <~PAN, <'CDA', $furtherData>, CVM, 
                                                  <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                                   'HHMMSS'>, 
@@ -3567,7 +3555,7 @@ next
                 by contradiction /* cyclic */
               next
                 case fresh
-                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, 'Null', 'TC',
+                by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc, 'TC',
                                                 <~PAN, <'CDA', $furtherData>, CVM, 
                                                  <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                                   'HHMMSS'>, 
@@ -3582,7 +3570,7 @@ next
               qed
             next
               case fresh
-              by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, 'Null', 'TC',
+              by solve( Terminal_Received_AC( $Terminal, $Bank.1, $CA, nc, 'TC',
                                               <~PAN, <'CDA', $furtherData>, CVM, 
                                                <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
                                                 'HHMMSS'>, 
@@ -3621,7 +3609,7 @@ next
           case Create_Card_Visa
           solve( !SDADFormat( format, CID ) ▶₄ #i )
             case Generate_SDAD_Format_Visa_case_1
-            by solve( Commit( ~nc, ~PAN,
+            by solve( Commit( 'Terminal', ~PAN,
                               <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, CTQ, 
                                <<'TC', CTQ>, amount, country, currency, date, type, UN>, ~ATC, 
                                MAC(f(~MK, ~ATC),
@@ -3631,7 +3619,7 @@ next
                       ) @ #j )
           next
             case Generate_SDAD_Format_Visa_case_2
-            by solve( Commit( ~nc, ~PAN,
+            by solve( Commit( 'Terminal', ~PAN,
                               <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, CTQ, 
                                <<'ARQC', CTQ>, amount, country, currency, date, type, UN>, ~ATC, 
                                MAC(f(~MK, ~ATC),
@@ -3784,11 +3772,11 @@ summary of summaries:
 
 analyzed: models-n-proofs/contactless/Mastercard_CDA_NoPIN_High.spthy
 
-  executable (exists-trace): falsified - no trace found (250 steps)
+  output:          models-n-proofs/contactless/Mastercard_CDA_NoPIN_High.proof
+  processing time: 47.888274181s
+  executable (exists-trace): falsified - no trace found (246 steps)
   secrecy_MK (all-traces): verified (12 steps)
   secrecy_privkCard (all-traces): verified (13 steps)
   secrecy_PAN (all-traces): falsified - found trace (7 steps)
 
 ==============================================================================
-294.07user 102.90system 0:49.33elapsed 804%CPU (0avgtext+0avgdata 815608maxresident)k
-0inputs+3440outputs (0major+1754074minor)pagefaults 0swaps

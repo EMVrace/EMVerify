@@ -944,8 +944,8 @@ rule (modulo E) Terminal_Processes_CVM_NoPIN:
    ]
   -->
    [
-   Terminal_Ready_For_Transaction( $Terminal, ~PAN, $Bank, $CA, PDOL, AIP,
-                                   pubkBank, pubkCard, 'NoPIN', 'Null'
+   Terminal_Ready_For_Cryptogram( $Terminal, ~PAN, $Bank, $CA, PDOL, AIP,
+                                  pubkBank, pubkCard, 'NoPIN', 'Null'
    )
    ]
 
@@ -954,7 +954,7 @@ rule (modulo E) Terminal_Processes_CVM_NoPIN:
 rule (modulo E) Card_Processes_CVM_NoPIN:
    [ Card_Ready_For_CVM( ~PAN, PDOL, ATC ), !SupportedCVM( ~PAN, CVM ) ]
   --[ NEq( CVM, 'OnlinePIN' ) ]->
-   [ Card_Ready_For_Transaction( ~PAN, PDOL, ATC, 'NoPIN' ) ]
+   [ Card_Ready_For_Cryptogram( ~PAN, PDOL, ATC, 'NoPIN' ) ]
 
   /* has exactly the trivial AC variant */
 
@@ -968,9 +968,9 @@ rule (modulo E) Terminal_Processes_CVM_OnlinePIN:
    ]
   --[ ActiveTransaction( $Terminal, ~UN ) ]->
    [
-   Terminal_Ready_For_Transaction( $Terminal, ~PAN, $Bank, $CA,
-                                   <$amount, country, currency, date, type, ~UN>, AIP, pubkBank, pubkCard,
-                                   'OnlinePIN', aenc(PIN, pubkBank)
+   Terminal_Ready_For_Cryptogram( $Terminal, ~PAN, $Bank, $CA,
+                                  <$amount, country, currency, date, type, ~UN>, AIP, pubkBank, pubkCard,
+                                  'OnlinePIN', aenc(PIN, pubkBank)
    )
    ]
 
@@ -981,7 +981,7 @@ rule (modulo E) Card_Processes_CVM_OnlinePIN:
    Card_Ready_For_CVM( ~PAN, PDOL, ATC ), !SupportedCVM( ~PAN, 'OnlinePIN' )
    ]
   -->
-   [ Card_Ready_For_Transaction( ~PAN, PDOL, ATC, 'OnlinePIN' ) ]
+   [ Card_Ready_For_Cryptogram( ~PAN, PDOL, ATC, 'OnlinePIN' ) ]
 
   /* has exactly the trivial AC variant */
 
@@ -1008,8 +1008,7 @@ rule (modulo E) Card_Verifies_PlainPIN:
    !SupportedCVM( ~PAN, 'PlainPIN' ), !PIN( ~PAN, PIN )
    ]
   -->
-   [
-   Out( '9000' ), Card_Ready_For_Transaction( ~PAN, PDOL, ATC, 'PlainPIN' )
+   [ Out( '9000' ), Card_Ready_For_Cryptogram( ~PAN, PDOL, ATC, 'PlainPIN' )
    ]
 
   /* has exactly the trivial AC variant */
@@ -1023,8 +1022,8 @@ rule (modulo E) Terminal_Receives_Verify_Response:
    ]
   -->
    [
-   Terminal_Ready_For_Transaction( $Terminal, ~PAN, $Bank, $CA, PDOL, AIP,
-                                   pubkBank, pubkCard, CVM, 'Null'
+   Terminal_Ready_For_Cryptogram( $Terminal, ~PAN, $Bank, $CA, PDOL, AIP,
+                                  pubkBank, pubkCard, CVM, 'Null'
    )
    ]
 
@@ -1114,15 +1113,14 @@ rule (modulo E) Card_Verifies_EncPIN:
    In( <'VERIFY', aenc(<'7F', PIN, ~nc>, pk(~privkCard))> )
    ]
   -->
-   [ Out( '9000' ), Card_Ready_For_Transaction( ~PAN, PDOL, ATC, 'EncPIN' )
-   ]
+   [ Out( '9000' ), Card_Ready_For_Cryptogram( ~PAN, PDOL, ATC, 'EncPIN' ) ]
 
   /* has exactly the trivial AC variant */
 
 rule (modulo E) Terminal_Sends_GenerateAC_NoCDA:
    [
-   Terminal_Ready_For_Transaction( $Terminal, ~PAN, $Bank, $CA, PDOL, AIP,
-                                   pubkBank, pubkCard, CVM, encPIN
+   Terminal_Ready_For_Cryptogram( $Terminal, ~PAN, $Bank, $CA, PDOL, AIP,
+                                  pubkBank, pubkCard, CVM, encPIN
    ),
    In( acType )
    ]
@@ -1138,8 +1136,8 @@ rule (modulo E) Terminal_Sends_GenerateAC_NoCDA:
   /*
   rule (modulo AC) Terminal_Sends_GenerateAC_NoCDA:
      [
-     Terminal_Ready_For_Transaction( $Terminal, ~PAN, $Bank, $CA, PDOL, AIP,
-                                     pubkBank, pubkCard, CVM, encPIN
+     Terminal_Ready_For_Cryptogram( $Terminal, ~PAN, $Bank, $CA, PDOL, AIP,
+                                    pubkBank, pubkCard, CVM, encPIN
      ),
      In( acType )
      ]
@@ -1161,8 +1159,8 @@ rule (modulo E) Terminal_Sends_GenerateAC_NoCDA:
 
 rule (modulo E) Terminal_Sends_GenerateAC_CDA:
    [
-   Terminal_Ready_For_Transaction( $Terminal, ~PAN, $Bank, $CA, PDOL,
-                                   <'CDA', furtherData>, pubkBank, pubkCard, CVM, encPIN
+   Terminal_Ready_For_Cryptogram( $Terminal, ~PAN, $Bank, $CA, PDOL,
+                                  <'CDA', furtherData>, pubkBank, pubkCard, CVM, encPIN
    ),
    In( acType )
    ]
@@ -1179,12 +1177,12 @@ rule (modulo E) Terminal_Sends_GenerateAC_CDA:
 
 rule (modulo E) Card_Responds_To_GenerateAC_NoCDA:
    [
-   Card_Ready_For_Transaction( ~PAN, PDOL, ATC, CVM ), !AIP( ~PAN, AIP ),
+   Card_Ready_For_Cryptogram( ~PAN, PDOL, ATC, CVM ), !AIP( ~PAN, AIP ),
    !Shk( ~PAN, ~MK ), !IssuingBank( ~PAN, $Bank ),
    In( <'GENERATE_AC', CID, 'NoCDA', CDOL1> )
    ]
   --[
-  Running( ~PAN, 'Null',
+  Running( ~PAN, 'Terminal',
            <'Card', 'Terminal', ~PAN, AIP, CVM, <PDOL, CDOL1>, ATC, 
             MAC(f(~MK, ATC), <PDOL, CDOL1>, AIP, ATC, <'IAD', CID>), 'IAD', CID>
   ),
@@ -1207,15 +1205,15 @@ rule (modulo E) Card_Responds_To_GenerateAC_NoCDA:
 
 rule (modulo E) Card_Responds_To_GenerateAC_CDA:
    [
-   Card_Ready_For_Transaction( ~PAN,
-                               <amount, country, currency, date, type, UN>, ATC, CVM
+   Card_Ready_For_Cryptogram( ~PAN,
+                              <amount, country, currency, date, type, UN>, ATC, CVM
    ),
    !LtkCard( ~PAN, ~privkCard ), !AIP( ~PAN, <'CDA', furtherData> ),
    !Shk( ~PAN, ~MK ), !IssuingBank( ~PAN, $Bank ), Fr( ~nc ),
    In( <'GENERATE_AC', CID, 'CDA', CDOL1> )
    ]
   --[
-  Running( ~PAN, ~nc,
+  Running( ~PAN, 'Terminal',
            <'Card', 'Terminal', ~PAN, <'CDA', furtherData>, CVM, 
             <<amount, country, currency, date, type, UN>, CDOL1>, ATC, 
             MAC(f(~MK, ATC), <<amount, country, currency, date, type, UN>, CDOL1>,
@@ -1705,7 +1703,7 @@ rule (modulo E) Card_Responds_To_Second_GenerateAC_NoCDA:
    )
    ]
   --[
-  Running( ~PAN, nc,
+  Running( ~PAN, 'Terminal',
            <'Card', 'Terminal', ~PAN, AIP, CVM, 
             <PDOL, CDOL1, 'ARC', DES3(f(~MK, ATC), (AC⊕p8('ARC')))>, ATC, 
             MAC(f(~MK, ATC), <PDOL, CDOL1, 'ARC', DES3(f(~MK, ATC), (AC⊕p8('ARC')))>,
@@ -1738,7 +1736,7 @@ rule (modulo E) Card_Responds_To_Second_GenerateAC_NoCDA:
      In( <'GENERATE_AC', 'TC', 'NoCDA', 'ARC', DES3(f(~MK, ATC), z)> )
      ]
     --[
-    Running( ~PAN, nc,
+    Running( ~PAN, 'Terminal',
              <'Card', 'Terminal', ~PAN, AIP, CVM, 
               <PDOL, CDOL1, 'ARC', DES3(f(~MK, ATC), z)>, ATC, 
               MAC(f(~MK, ATC), <PDOL, CDOL1, 'ARC', DES3(f(~MK, ATC), z)>, AIP, ATC,
@@ -1787,7 +1785,7 @@ rule (modulo E) Card_Responds_To_Second_GenerateAC_CDA:
    )
    ]
   --[
-  Running( ~PAN, ~nc,
+  Running( ~PAN, 'Terminal',
            <'Card', 'Terminal', ~PAN, <'CDA', furtherData>, CVM, 
             <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
              DES3(f(~MK, ATC), (AC⊕p8('ARC')))>, 
@@ -1850,7 +1848,7 @@ rule (modulo E) Card_Responds_To_Second_GenerateAC_CDA:
      In( <'GENERATE_AC', 'TC', 'CDA', 'ARC', DES3(f(~MK, ATC), z)> )
      ]
     --[
-    Running( ~PAN, ~nc,
+    Running( ~PAN, 'Terminal',
              <'Card', 'Terminal', ~PAN, <'CDA', furtherData>, CVM, 
               <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                DES3(f(~MK, ATC), z)>, 
@@ -2082,7 +2080,7 @@ rule (modulo E) Terminal_Commits_ARQC:
   TerminalAccepts( <~PAN, <'DDA', furtherData>, 'PlainPIN', X, ATC, AC, IAD
                    >
   ),
-  Commit( nc, ~PAN,
+  Commit( 'Terminal', ~PAN,
           <'Card', 'Terminal', ~PAN, <'DDA', furtherData>, 'PlainPIN', X, ATC, AC, 
            IAD>
   ),
@@ -2263,9 +2261,10 @@ qed
 
 lemma executable:
   exists-trace
-  "∃ Bank PAN nc t #i #j #k #l.
-    (((((((((#i < #j) ∧ (Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i)) ∧
-           (Commit( nc, PAN, <'Card', 'Terminal', t> ) @ #j)) ∧
+  "∃ Bank PAN t #i #j #k #l.
+    (((((((((#i < #j) ∧
+            (Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i)) ∧
+           (Commit( 'Terminal', PAN, <'Card', 'Terminal', t> ) @ #j)) ∧
           (#k < #l)) ∧
          (Running( PAN, Bank, <'Card', 'Bank', t> ) @ #k)) ∧
         (Commit( Bank, PAN, <'Card', 'Bank', t> ) @ #l)) ∧
@@ -2275,9 +2274,9 @@ lemma executable:
     (¬(∃ A #a. Compromise( A ) @ #a))"
 /*
 guarded formula characterizing all satisfying traces:
-"∃ Bank PAN nc t #i #j #k #l.
-  (Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i) ∧
-  (Commit( nc, PAN, <'Card', 'Terminal', t> ) @ #j) ∧
+"∃ Bank PAN t #i #j #k #l.
+  (Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i) ∧
+  (Commit( 'Terminal', PAN, <'Card', 'Terminal', t> ) @ #j) ∧
   (Running( PAN, Bank, <'Card', 'Bank', t> ) @ #k) ∧
   (Commit( Bank, PAN, <'Card', 'Bank', t> ) @ #l)
  ∧
@@ -2289,7 +2288,7 @@ guarded formula characterizing all satisfying traces:
   (∀ A #a. (Compromise( A ) @ #a) ⇒ ⊥)"
 */
 simplify
-solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
+solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
   case Card_Responds_To_Second_GenerateAC_NoCDA
   solve( !IssuingBank( ~PAN, $Bank ) ▶₁ #i )
     case Create_Card
@@ -2301,7 +2300,7 @@ solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
         case Terminal_Processes_CVM_PlainPIN_case_3
         solve( !KU( ~PAN ) @ #vk.37 )
           case Card_Responds_To_ReadRecord_DDA_case_1
-          solve( Commit( 'Null', ~PAN,
+          solve( Commit( 'Terminal', ~PAN,
                          <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, 'PlainPIN', 
                           <PDOL, CDOL1, 'ARC', 
                            DES3(f(~MK.1, ~ATC),
@@ -2323,7 +2322,7 @@ solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
                           'IAD', 'TC'>
                  ) @ #j )
             case Terminal_Commits_ARQC
-            solve( Terminal_Received_SecondAC( $Terminal, $Bank.1, $CA, 'Null',
+            solve( Terminal_Received_SecondAC( $Terminal, $Bank.1, $CA, nc,
                                                <~PAN, <'DDA', $furtherData>, 'PlainPIN', 
                                                 <PDOL, CDOL1, 'ARC', 
                                                  DES3(f(~MK.1, ~ATC),
@@ -2790,7 +2789,7 @@ guarded formula characterizing all counter-examples:
 simplify
 solve( Commit( T, P, <r, 'Terminal', t> ) @ #i )
   case Terminal_Commits_ARQC
-  solve( Terminal_Received_SecondAC( $Terminal, $Bank, $CA, T,
+  solve( Terminal_Received_SecondAC( $Terminal, $Bank, $CA, nc,
                                      <~PAN, <'DDA', furtherData>, 'PlainPIN', X, ATC, AC, IAD>, ~channelID
          ) ▶₀ #i )
     case Terminal_Receives_SecondAC_NoCDA_case_1
@@ -3158,6 +3157,8 @@ summary of summaries:
 
 analyzed: models-n-proofs/contact/Contact_DDA_PlainPIN_Online.spthy
 
+  output:          models-n-proofs/contact/Contact_DDA_PlainPIN_Online.proof
+  processing time: 794.427334076s
   ARPC_source (all-traces): verified (22 steps)
   executable (exists-trace): verified (30 steps)
   bank_accepts (all-traces): falsified - found trace (18 steps)
@@ -3169,5 +3170,3 @@ analyzed: models-n-proofs/contact/Contact_DDA_PlainPIN_Online.spthy
   secrecy_PAN (all-traces): falsified - found trace (6 steps)
 
 ==============================================================================
-4913.57user 2161.89system 13:47.76elapsed 854%CPU (0avgtext+0avgdata 9758448maxresident)k
-0inputs+41024outputs (0major+124808797minor)pagefaults 0swaps

@@ -117,8 +117,7 @@ rule (modulo E) Create_Card:
   ]->
    [
    !AIP( ~PAN, <auth, $furtherData> ), !AID( ~PAN, 'Mastercard' ),
-   !SupportedCVM( ~PAN, CVM ), !Shk( ~PAN, ~MK ),
-   !IssuingBank( ~PAN, $Bank ),
+   !Shk( ~PAN, ~MK ), !IssuingBank( ~PAN, $Bank ),
    Set_Records( ~PAN, ~expDate, $CA, certBank,
                 sign(<'03', ~PAN, ~expDate, auth, $furtherData>, ~privkBank), CVM
    ),
@@ -225,7 +224,7 @@ rule (modulo E) Card_Responds_To_ReadRecord_NotDDA:
    !Records( ~PAN, records ), In( <'READ_RECORD', 'AFL'> )
    ]
   --[ NEq( fst(AIP), 'DDA' ) ]->
-   [ Out( records ), Card_Ready_For_Transaction( ~PAN, PDOL, ATC ) ]
+   [ Out( records ), Card_Ready_For_Cryptogram( ~PAN, PDOL, ATC ) ]
 
   /*
   rule (modulo AC) Card_Responds_To_ReadRecord_NotDDA:
@@ -234,7 +233,7 @@ rule (modulo E) Card_Responds_To_ReadRecord_NotDDA:
      !Records( ~PAN, records ), In( <'READ_RECORD', 'AFL'> )
      ]
     --[ NEq( z, 'DDA' ) ]->
-     [ Out( records ), Card_Ready_For_Transaction( ~PAN, PDOL, ATC ) ]
+     [ Out( records ), Card_Ready_For_Cryptogram( ~PAN, PDOL, ATC ) ]
     variants (modulo AC)
     1. AIP   = AIP.10
        z     = fst(AIP.10)
@@ -893,7 +892,7 @@ rule (modulo E) Card_Responds_To_InternalAuthenticate:
   -->
    [
    Out( <~nc, sign(<'05', ~nc, DDOL>, ~privkCard)> ),
-   Card_Ready_For_Transaction( ~PAN, PDOL, ATC )
+   Card_Ready_For_Cryptogram( ~PAN, PDOL, ATC )
    ]
 
   /* has exactly the trivial AC variant */
@@ -956,9 +955,9 @@ rule (modulo E) Terminal_Processes_CVM_NoPIN:
    ]
   -->
    [
-   Terminal_Ready_For_Transaction( $Terminal, ~PAN, $Bank, $CA,
-                                   <$amount, country, currency, date, type, ~UN>, AIP, pubkBank, pubkCard,
-                                   'NoPIN', 'Null', CVM
+   Terminal_Ready_For_Cryptogram( $Terminal, ~PAN, $Bank, $CA,
+                                  <$amount, country, currency, date, type, ~UN>, AIP, pubkBank, pubkCard,
+                                  'NoPIN', 'Null', CVM
    )
    ]
 
@@ -974,9 +973,9 @@ rule (modulo E) Terminal_Processes_CVM_OnlinePIN:
    ]
   -->
    [
-   Terminal_Ready_For_Transaction( $Terminal, ~PAN, $Bank, $CA,
-                                   <$amount, country, currency, date, type, ~UN>, AIP, pubkBank, pubkCard,
-                                   'OnlinePIN', aenc(PIN, pubkBank), 'OnlinePIN'
+   Terminal_Ready_For_Cryptogram( $Terminal, ~PAN, $Bank, $CA,
+                                  <$amount, country, currency, date, type, ~UN>, AIP, pubkBank, pubkCard,
+                                  'OnlinePIN', aenc(PIN, pubkBank), 'OnlinePIN'
    )
    ]
 
@@ -992,9 +991,9 @@ rule (modulo E) Terminal_Processes_CVM_ODCVM:
    ]
   -->
    [
-   Terminal_Ready_For_Transaction( $Terminal, ~PAN, $Bank, $CA,
-                                   <$amount, country, currency, date, type, ~UN>,
-                                   <auth, 'ODCVM', furtherData2>, pubkBank, pubkCard, 'ODCVM', 'Null', CVM
+   Terminal_Ready_For_Cryptogram( $Terminal, ~PAN, $Bank, $CA,
+                                  <$amount, country, currency, date, type, ~UN>,
+                                  <auth, 'ODCVM', furtherData2>, pubkBank, pubkCard, 'ODCVM', 'Null', CVM
    )
    ]
 
@@ -1002,8 +1001,8 @@ rule (modulo E) Terminal_Processes_CVM_ODCVM:
 
 rule (modulo E) Terminal_Sends_GenerateAC_NoCDA:
    [
-   Terminal_Ready_For_Transaction( $Terminal, ~PAN, $Bank, $CA, PDOL, AIP,
-                                   pubkBank, pubkCard, CVM, encPIN, supportedCVM
+   Terminal_Ready_For_Cryptogram( $Terminal, ~PAN, $Bank, $CA, PDOL, AIP,
+                                  pubkBank, pubkCard, CVM, encPIN, supportedCVM
    ),
    In( acType )
    ]
@@ -1019,8 +1018,8 @@ rule (modulo E) Terminal_Sends_GenerateAC_NoCDA:
   /*
   rule (modulo AC) Terminal_Sends_GenerateAC_NoCDA:
      [
-     Terminal_Ready_For_Transaction( $Terminal, ~PAN, $Bank, $CA, PDOL, AIP,
-                                     pubkBank, pubkCard, CVM, encPIN, supportedCVM
+     Terminal_Ready_For_Cryptogram( $Terminal, ~PAN, $Bank, $CA, PDOL, AIP,
+                                    pubkBank, pubkCard, CVM, encPIN, supportedCVM
      ),
      In( acType )
      ]
@@ -1042,8 +1041,8 @@ rule (modulo E) Terminal_Sends_GenerateAC_NoCDA:
 
 rule (modulo E) Terminal_Sends_GenerateAC_CDA:
    [
-   Terminal_Ready_For_Transaction( $Terminal, ~PAN, $Bank, $CA, PDOL,
-                                   <'CDA', furtherData>, pubkBank, pubkCard, CVM, encPIN, supportedCVM
+   Terminal_Ready_For_Cryptogram( $Terminal, ~PAN, $Bank, $CA, PDOL,
+                                  <'CDA', furtherData>, pubkBank, pubkCard, CVM, encPIN, supportedCVM
    ),
    In( acType )
    ]
@@ -1060,12 +1059,12 @@ rule (modulo E) Terminal_Sends_GenerateAC_CDA:
 
 rule (modulo E) Card_Responds_To_GenerateAC_NoCDA:
    [
-   Card_Ready_For_Transaction( ~PAN, PDOL, ATC ), !AIP( ~PAN, AIP ),
+   Card_Ready_For_Cryptogram( ~PAN, PDOL, ATC ), !AIP( ~PAN, AIP ),
    !Shk( ~PAN, ~MK ), !IssuingBank( ~PAN, $Bank ),
    In( <'GENERATE_AC', CID, 'NoCDA', 'TVR', CVM, 'HHMMSS'> )
    ]
   --[
-  Running( ~PAN, 'Null',
+  Running( ~PAN, 'Terminal',
            <'Card', 'Terminal', ~PAN, AIP, CVM, <PDOL, 'TVR', CVM, 'HHMMSS'>, ATC, 
             MAC(f(~MK, ATC), <PDOL, 'TVR', CVM, 'HHMMSS'>, AIP, ATC, <'IAD', CID>), 
             'IAD', CID>
@@ -1087,15 +1086,15 @@ rule (modulo E) Card_Responds_To_GenerateAC_NoCDA:
 
 rule (modulo E) Card_Responds_To_GenerateAC_CDA:
    [
-   Card_Ready_For_Transaction( ~PAN,
-                               <amount, country, currency, date, type, UN>, ATC
+   Card_Ready_For_Cryptogram( ~PAN,
+                              <amount, country, currency, date, type, UN>, ATC
    ),
    !LtkCard( ~PAN, ~privkCard ), !AIP( ~PAN, <'CDA', furtherData> ),
    !Shk( ~PAN, ~MK ), !IssuingBank( ~PAN, $Bank ), Fr( ~nc ),
    In( <'GENERATE_AC', CID, 'CDA', 'TVR', CVM, 'HHMMSS'> )
    ]
   --[
-  Running( ~PAN, ~nc,
+  Running( ~PAN, 'Terminal',
            <'Card', 'Terminal', ~PAN, <'CDA', furtherData>, CVM, 
             <<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>, 
             ATC, 
@@ -1425,7 +1424,7 @@ rule (modulo E) Card_Responds_To_GPO_EMV_Visa:
    ]
   --[
   OneCard( ), Once( <~PAN, ATC, 'Card'> ), NEq( CVM, 'CDCVM' ),
-  Running( ~PAN, 'Null',
+  Running( ~PAN, 'Terminal',
            <'Card', 'Terminal', ~PAN, <'EMV', $furtherData>, CVM, 
             <<acType, CVM>, amount, country, currency, date, type, UN>, ATC, 
             MAC(f(~MK, ATC),
@@ -1526,7 +1525,7 @@ rule (modulo E) Card_Responds_To_ReadRecord_DDA_Visa:
    !IssuingBank( ~PAN, $Bank ), In( <'READ_RECORD', 'AFL'> )
    ]
   --[
-  Running( ~PAN, ~nc,
+  Running( ~PAN, 'Terminal',
            <'Card', 'Terminal', ~PAN, <'DDA', furtherData>, CTQ, 
             <TTQ, amount, country, currency, date, type, UN>, ATC, AC, IAD>
   ),
@@ -2207,7 +2206,7 @@ rule (modulo E) Terminal_Commits_TC_Visa:
   TerminalAccepts( <~PAN, <'DDA', furtherData>, CVM, 
                     <TTQ, $amount, country, currency, date, type, ~UN>, ATC, AC, IAD>
   ),
-  Commit( nc, ~PAN,
+  Commit( 'Terminal', ~PAN,
           <'Card', 'Terminal', ~PAN, <'DDA', furtherData>, CVM, 
            <TTQ, $amount, country, currency, date, type, ~UN>, ATC, AC, IAD>
   ),
@@ -2337,7 +2336,7 @@ rule (modulo E) Terminal_Commits_ARQC_Visa:
   TerminalAccepts( <~PAN, <'DDA', furtherData>, CVM, 
                     <TTQ, $amount, country, currency, date, type, ~UN>, ATC, AC, IAD>
   ),
-  Commit( nc, ~PAN,
+  Commit( 'Terminal', ~PAN,
           <'Card', 'Terminal', ~PAN, <'DDA', furtherData>, CVM, 
            <TTQ, $amount, country, currency, date, type, ~UN>, ATC, AC, IAD>
   ),
@@ -2375,9 +2374,10 @@ restriction compatibility:
 
 lemma executable:
   exists-trace
-  "∃ Bank PAN nc t #i #j #k #l.
-    (((((((((#i < #j) ∧ (Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i)) ∧
-           (Commit( nc, PAN, <'Card', 'Terminal', t> ) @ #j)) ∧
+  "∃ Bank PAN t #i #j #k #l.
+    (((((((((#i < #j) ∧
+            (Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i)) ∧
+           (Commit( 'Terminal', PAN, <'Card', 'Terminal', t> ) @ #j)) ∧
           (#k < #l)) ∧
          (Running( PAN, Bank, <'Card', 'Bank', t> ) @ #k)) ∧
         (Commit( Bank, PAN, <'Card', 'Bank', t> ) @ #l)) ∧
@@ -2387,9 +2387,9 @@ lemma executable:
     (¬(∃ A #a. Compromise( A ) @ #a))"
 /*
 guarded formula characterizing all satisfying traces:
-"∃ Bank PAN nc t #i #j #k #l.
-  (Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i) ∧
-  (Commit( nc, PAN, <'Card', 'Terminal', t> ) @ #j) ∧
+"∃ Bank PAN t #i #j #k #l.
+  (Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i) ∧
+  (Commit( 'Terminal', PAN, <'Card', 'Terminal', t> ) @ #j) ∧
   (Running( PAN, Bank, <'Card', 'Bank', t> ) @ #k) ∧
   (Commit( Bank, PAN, <'Card', 'Bank', t> ) @ #l)
  ∧
@@ -2401,7 +2401,7 @@ guarded formula characterizing all satisfying traces:
   (∀ A #a. (Compromise( A ) @ #a) ⇒ ⊥)"
 */
 simplify
-solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
+solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
   case Card_Responds_To_ReadRecord_DDA_Visa
   solve( !IssuingBank( ~PAN, $Bank ) ▶₅ #i )
     case Create_Card_Visa
@@ -2416,7 +2416,7 @@ solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
           case Create_Card_Visa
           solve( !SDADFormat( format, CID ) ▶₄ #i )
             case Generate_SDAD_Format_Visa_case_1
-            solve( Commit( ~nc, ~PAN,
+            solve( Commit( 'Terminal', ~PAN,
                            <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, CTQ, 
                             <<'TC', CTQ>, amount, country, currency, date, type, UN>, ~ATC, 
                             MAC(f(~MK, ~ATC),
@@ -2427,7 +2427,7 @@ solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
               case Terminal_Commits_TC_Visa
               solve( !KU( ~UN ) @ #vk.19 )
                 case Terminal_Sends_GPO_Low_Visa
-                solve( Terminal_Received_AC_Visa( $Terminal, $Bank.1, $CA.1, ~nc, 'TC',
+                solve( Terminal_Received_AC_Visa( $Terminal, $Bank.1, $CA.1, nc.1, 'TC',
                                                   <~PAN, <'DDA', $furtherData>, CTQ, 
                                                    <<'TC', CTQ>, $amount, country, currency, date, type, ~UN
                                                    >, 
@@ -2442,75 +2442,49 @@ solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
                   case Terminal_Sends_AC_Visa
                   solve( !KU( ~PAN ) @ #vk.26 )
                     case Card_Responds_To_GPO_DDA_Visa
-                    solve( !KU( ~nc ) @ #vk.54 )
-                      case Card_Responds_To_ReadRecord_DDA_Visa
-                      solve( !KU( ~ATC ) @ #vk.58 )
-                        case Card_Responds_To_GPO_DDA_Visa
-                        solve( !Value( $amount, 'Low' ) ▶₁ #j )
-                          case Generate_Amount_Low
-                          solve( Running( ~PAN, Bank.1,
-                                          <'Card', 'Bank', ~PAN, <'DDA', $furtherData>, 'NoPIN', 
-                                           <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                            'Purchase', ~UN>, 
-                                           ~ATC, 
-                                           MAC(f(~MK, ~ATC),
-                                               <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                'Purchase', ~UN>,
-                                               <'DDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
-                                           'IAD', 'TC'>
-                                 ) @ #k )
-                            case Card_Responds_To_ReadRecord_DDA_Visa
-                            solve( !IssuingBank( ~PAN, $Bank.1 ) ▶₅ #k )
-                              case Create_Card_Visa
-                              solve( Card_Responded_To_GPO_Visa( ~PAN, <'DDA', $furtherData>,
-                                                                 <<'TC', 'NoPIN'>, $amount, 'Switzerland', 
-                                                                  'CHF', 'YYMMDD', 'Purchase', ~UN>,
-                                                                 ~ATC,
-                                                                 MAC(f(~MK, ~ATC),
-                                                                     <<'TC', 'NoPIN'>, $amount, 
-                                                                      'Switzerland', 'CHF', 'YYMMDD', 
-                                                                      'Purchase', ~UN>,
-                                                                     <'DDA', $furtherData>, ~ATC,
-                                                                     <'IAD', 'TC'>),
-                                                                 CID, 'NoPIN', <'IAD', 'TC'>
-                                     ) ▶₀ #k )
-                                case Card_Responds_To_GPO_DDA_Visa
-                                solve( Commit( $Bank, ~PAN,
-                                               <'Card', 'Bank', ~PAN, <'DDA', $furtherData>, 'NoPIN', 
-                                                <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                 'Purchase', ~UN>, 
-                                                ~ATC, 
-                                                MAC(f(~MK, ~ATC),
-                                                    <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 
-                                                     'YYMMDD', 'Purchase', ~UN>,
-                                                    <'DDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
-                                                'IAD', 'TC'>
-                                       ) @ #l )
-                                  case Bank_Commits_Visa
-                                  solve( Bank_Commits_Visa( $Bank, $Terminal.1,
-                                                            <~PAN, <'DDA', $furtherData>, 'NoPIN', 
-                                                             <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 
-                                                              'YYMMDD', 'Purchase', ~UN>, 
-                                                             ~ATC, 
-                                                             MAC(f(~MK, ~ATC),
-                                                                 <<'TC', 'NoPIN'>, $amount, 'Switzerland', 
-                                                                  'CHF', 'YYMMDD', 'Purchase', ~UN>,
-                                                                 <'DDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
-                                                             'IAD', 'TC'>,
-                                                            channelID.1, ARPC
-                                         ) ▶₀ #l )
-                                    case Bank_Processes_CVM_NotOnlinePIN_Visa
-                                    solve( !Value( $amount, 'Low' ) ▶₁ #l )
-                                      case Generate_Amount_Low
-                                      solve( !IssuingCA( $Bank, $CA.1 ) ▶₂ #l )
-                                        case Create_Bank
-                                        solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.52 )
-                                          case Card_Responds_To_ReadRecord_DDA_Visa
-                                          solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank)
-                                                 ) @ #vk.55 )
-                                            case Card_Responds_To_ReadRecord_DDA_Visa
-                                            solve( Recv( $Terminal.1, $Bank, <channelID.1, 'Visa', '1'>,
-                                                         <
+                    solve( !KU( ~ATC ) @ #vk.58 )
+                      case Card_Responds_To_GPO_DDA_Visa
+                      solve( !Value( $amount, 'Low' ) ▶₁ #j )
+                        case Generate_Amount_Low
+                        solve( Running( ~PAN, Bank.1,
+                                        <'Card', 'Bank', ~PAN, <'DDA', $furtherData>, 'NoPIN', 
+                                         <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                          'Purchase', ~UN>, 
+                                         ~ATC, 
+                                         MAC(f(~MK, ~ATC),
+                                             <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                              'Purchase', ~UN>,
+                                             <'DDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                                         'IAD', 'TC'>
+                               ) @ #k )
+                          case Card_Responds_To_ReadRecord_DDA_Visa
+                          solve( !IssuingBank( ~PAN, $Bank.1 ) ▶₅ #k )
+                            case Create_Card_Visa
+                            solve( Card_Responded_To_GPO_Visa( ~PAN, <'DDA', $furtherData>,
+                                                               <<'TC', 'NoPIN'>, $amount, 'Switzerland', 
+                                                                'CHF', 'YYMMDD', 'Purchase', ~UN>,
+                                                               ~ATC,
+                                                               MAC(f(~MK, ~ATC),
+                                                                   <<'TC', 'NoPIN'>, $amount, 'Switzerland', 
+                                                                    'CHF', 'YYMMDD', 'Purchase', ~UN>,
+                                                                   <'DDA', $furtherData>, ~ATC,
+                                                                   <'IAD', 'TC'>),
+                                                               CID, 'NoPIN', <'IAD', 'TC'>
+                                   ) ▶₀ #k )
+                              case Card_Responds_To_GPO_DDA_Visa
+                              solve( Commit( $Bank, ~PAN,
+                                             <'Card', 'Bank', ~PAN, <'DDA', $furtherData>, 'NoPIN', 
+                                              <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                               'Purchase', ~UN>, 
+                                              ~ATC, 
+                                              MAC(f(~MK, ~ATC),
+                                                  <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                   'Purchase', ~UN>,
+                                                  <'DDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                                              'IAD', 'TC'>
+                                     ) @ #l )
+                                case Bank_Commits_Visa
+                                solve( Bank_Commits_Visa( $Bank, $Terminal.1,
                                                           <~PAN, <'DDA', $furtherData>, 'NoPIN', 
                                                            <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 
                                                             'YYMMDD', 'Purchase', ~UN>, 
@@ -2519,15 +2493,39 @@ solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
                                                                <<'TC', 'NoPIN'>, $amount, 'Switzerland', 
                                                                 'CHF', 'YYMMDD', 'Purchase', ~UN>,
                                                                <'DDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
-                                                           'IAD', 'TC'>, 
-                                                          'Null'>
-                                                   ) ▶₀ #vr.36 )
-                                              case Terminal_Bank_Network
-                                              solve( !KU( sign(<'05', ~ATC, ~UN, $amount, 'CHF', ~nc, 
-                                                                'NoPIN', 'DDA', $furtherData>,
-                                                               ~privkCard)
-                                                     ) @ #vk.56 )
-                                                case Card_Responds_To_ReadRecord_DDA_Visa
+                                                           'IAD', 'TC'>,
+                                                          channelID.1, ARPC
+                                       ) ▶₀ #l )
+                                  case Bank_Processes_CVM_NotOnlinePIN_Visa
+                                  solve( !Value( $amount, 'Low' ) ▶₁ #l )
+                                    case Generate_Amount_Low
+                                    solve( !IssuingCA( $Bank, $CA.1 ) ▶₂ #l )
+                                      case Create_Bank
+                                      solve( !KU( sign(<'02', $Bank, pk(x), $CA>, ~privkCA) ) @ #vk.51 )
+                                        case Card_Responds_To_ReadRecord_DDA_Visa
+                                        solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.54 )
+                                          case Card_Responds_To_ReadRecord_DDA_Visa
+                                          solve( !KU( sign(<'05', ~ATC, ~UN, $amount, 'CHF', nc.1, 'NoPIN', 
+                                                            'DDA', $furtherData>,
+                                                           ~privkCard)
+                                                 ) @ #vk.56 )
+                                            case Card_Responds_To_ReadRecord_DDA_Visa
+                                            solve( !KU( ~nc ) @ #vk.56 )
+                                              case Card_Responds_To_ReadRecord_DDA_Visa
+                                              solve( Recv( $Terminal.1, $Bank, <channelID.1, 'Visa', '1'>,
+                                                           <
+                                                            <~PAN, <'DDA', $furtherData>, 'NoPIN', 
+                                                             <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 
+                                                              'YYMMDD', 'Purchase', ~UN>, 
+                                                             ~ATC, 
+                                                             MAC(f(~MK, ~ATC),
+                                                                 <<'TC', 'NoPIN'>, $amount, 'Switzerland', 
+                                                                  'CHF', 'YYMMDD', 'Purchase', ~UN>,
+                                                                 <'DDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                                                             'IAD', 'TC'>, 
+                                                            'Null'>
+                                                     ) ▶₀ #vr.30 )
+                                                case Terminal_Bank_Network
                                                 solve( !KU( pk(~privkBank) ) @ #vk.54 )
                                                   case Card_Responds_To_ReadRecord_DDA_Visa
                                                   solve( !KU( pk(~privkCard) ) @ #vk.56 )
@@ -2667,7 +2665,7 @@ guarded formula characterizing all counter-examples:
 simplify
 solve( Commit( T, P, <r, 'Terminal', t> ) @ #i )
   case Terminal_Commits_TC_Visa
-  solve( Terminal_Received_AC_Visa( $Terminal, $Bank, $CA, T, 'TC',
+  solve( Terminal_Received_AC_Visa( $Terminal, $Bank, $CA, nc, 'TC',
                                     <~PAN, <'DDA', furtherData>, CVM, 
                                      <TTQ, $amount, country, currency, date, type, ~UN>, ATC, AC, IAD>,
                                     ~channelID
@@ -2677,7 +2675,7 @@ solve( Commit( T, P, <r, 'Terminal', t> ) @ #i )
       case Card_Responds_To_ReadRecord_DDA_Visa_case_1
       solve( !KU( sign(<'04', ~PAN, pk(x), $Bank>, ~privkBank) ) @ #vk.25 )
         case Card_Responds_To_ReadRecord_DDA_Visa
-        solve( !KU( sign(<'05', ATC, ~UN, $amount, 'CHF', T, 'NoPIN', 'DDA', 
+        solve( !KU( sign(<'05', ATC, ~UN, $amount, 'CHF', nc, 'NoPIN', 'DDA', 
                           furtherData>,
                          ~privkCard)
                ) @ #vk.35 )
@@ -5233,6 +5231,8 @@ summary of summaries:
 
 analyzed: models-n-proofs/contactless/Visa_DDA_Low.spthy
 
+  output:          models-n-proofs/contactless/Visa_DDA_Low.proof
+  processing time: 1878.714985412s
   executable (exists-trace): verified (29 steps)
   bank_accepts (all-traces): falsified - found trace (17 steps)
   auth_to_terminal_minimal (all-traces): falsified - found trace (14 steps)
@@ -5244,5 +5244,3 @@ analyzed: models-n-proofs/contactless/Visa_DDA_Low.spthy
   secrecy_PAN (all-traces): falsified - found trace (7 steps)
 
 ==============================================================================
-8472.75user 5820.49system 31:41.13elapsed 751%CPU (0avgtext+0avgdata 3969004maxresident)k
-0inputs+69672outputs (0major+114645464minor)pagefaults 0swaps

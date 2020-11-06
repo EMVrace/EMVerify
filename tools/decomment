@@ -35,7 +35,8 @@ try:
 	clean_content = re.sub(r'\s*\n', '\n', clean_content)
 
 	#add empty line before each line that starts with a keyword
-	keywords = ['rule', 'lemma', 'restriction', 'builtins', 'functions', 'begin']
+	keywords = ['rule', 'lemma', 'restriction', 'builtins',
+							'functions', 'begin', 'equations']
 	for keyword in keywords:
 		clean_content = clean_content.replace('\n'+keyword, '\n\n' + keyword)
 

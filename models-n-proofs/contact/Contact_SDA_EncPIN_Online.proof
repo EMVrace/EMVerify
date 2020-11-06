@@ -944,8 +944,8 @@ rule (modulo E) Terminal_Processes_CVM_NoPIN:
    ]
   -->
    [
-   Terminal_Ready_For_Transaction( $Terminal, ~PAN, $Bank, $CA, PDOL, AIP,
-                                   pubkBank, pubkCard, 'NoPIN', 'Null'
+   Terminal_Ready_For_Cryptogram( $Terminal, ~PAN, $Bank, $CA, PDOL, AIP,
+                                  pubkBank, pubkCard, 'NoPIN', 'Null'
    )
    ]
 
@@ -954,7 +954,7 @@ rule (modulo E) Terminal_Processes_CVM_NoPIN:
 rule (modulo E) Card_Processes_CVM_NoPIN:
    [ Card_Ready_For_CVM( ~PAN, PDOL, ATC ), !SupportedCVM( ~PAN, CVM ) ]
   --[ NEq( CVM, 'OnlinePIN' ) ]->
-   [ Card_Ready_For_Transaction( ~PAN, PDOL, ATC, 'NoPIN' ) ]
+   [ Card_Ready_For_Cryptogram( ~PAN, PDOL, ATC, 'NoPIN' ) ]
 
   /* has exactly the trivial AC variant */
 
@@ -968,9 +968,9 @@ rule (modulo E) Terminal_Processes_CVM_OnlinePIN:
    ]
   --[ ActiveTransaction( $Terminal, ~UN ) ]->
    [
-   Terminal_Ready_For_Transaction( $Terminal, ~PAN, $Bank, $CA,
-                                   <$amount, country, currency, date, type, ~UN>, AIP, pubkBank, pubkCard,
-                                   'OnlinePIN', aenc(PIN, pubkBank)
+   Terminal_Ready_For_Cryptogram( $Terminal, ~PAN, $Bank, $CA,
+                                  <$amount, country, currency, date, type, ~UN>, AIP, pubkBank, pubkCard,
+                                  'OnlinePIN', aenc(PIN, pubkBank)
    )
    ]
 
@@ -981,7 +981,7 @@ rule (modulo E) Card_Processes_CVM_OnlinePIN:
    Card_Ready_For_CVM( ~PAN, PDOL, ATC ), !SupportedCVM( ~PAN, 'OnlinePIN' )
    ]
   -->
-   [ Card_Ready_For_Transaction( ~PAN, PDOL, ATC, 'OnlinePIN' ) ]
+   [ Card_Ready_For_Cryptogram( ~PAN, PDOL, ATC, 'OnlinePIN' ) ]
 
   /* has exactly the trivial AC variant */
 
@@ -1008,8 +1008,7 @@ rule (modulo E) Card_Verifies_PlainPIN:
    !SupportedCVM( ~PAN, 'PlainPIN' ), !PIN( ~PAN, PIN )
    ]
   -->
-   [
-   Out( '9000' ), Card_Ready_For_Transaction( ~PAN, PDOL, ATC, 'PlainPIN' )
+   [ Out( '9000' ), Card_Ready_For_Cryptogram( ~PAN, PDOL, ATC, 'PlainPIN' )
    ]
 
   /* has exactly the trivial AC variant */
@@ -1023,8 +1022,8 @@ rule (modulo E) Terminal_Receives_Verify_Response:
    ]
   -->
    [
-   Terminal_Ready_For_Transaction( $Terminal, ~PAN, $Bank, $CA, PDOL, AIP,
-                                   pubkBank, pubkCard, CVM, 'Null'
+   Terminal_Ready_For_Cryptogram( $Terminal, ~PAN, $Bank, $CA, PDOL, AIP,
+                                  pubkBank, pubkCard, CVM, 'Null'
    )
    ]
 
@@ -1114,15 +1113,14 @@ rule (modulo E) Card_Verifies_EncPIN:
    In( <'VERIFY', aenc(<'7F', PIN, ~nc>, pk(~privkCard))> )
    ]
   -->
-   [ Out( '9000' ), Card_Ready_For_Transaction( ~PAN, PDOL, ATC, 'EncPIN' )
-   ]
+   [ Out( '9000' ), Card_Ready_For_Cryptogram( ~PAN, PDOL, ATC, 'EncPIN' ) ]
 
   /* has exactly the trivial AC variant */
 
 rule (modulo E) Terminal_Sends_GenerateAC_NoCDA:
    [
-   Terminal_Ready_For_Transaction( $Terminal, ~PAN, $Bank, $CA, PDOL, AIP,
-                                   pubkBank, pubkCard, CVM, encPIN
+   Terminal_Ready_For_Cryptogram( $Terminal, ~PAN, $Bank, $CA, PDOL, AIP,
+                                  pubkBank, pubkCard, CVM, encPIN
    ),
    In( acType )
    ]
@@ -1138,8 +1136,8 @@ rule (modulo E) Terminal_Sends_GenerateAC_NoCDA:
   /*
   rule (modulo AC) Terminal_Sends_GenerateAC_NoCDA:
      [
-     Terminal_Ready_For_Transaction( $Terminal, ~PAN, $Bank, $CA, PDOL, AIP,
-                                     pubkBank, pubkCard, CVM, encPIN
+     Terminal_Ready_For_Cryptogram( $Terminal, ~PAN, $Bank, $CA, PDOL, AIP,
+                                    pubkBank, pubkCard, CVM, encPIN
      ),
      In( acType )
      ]
@@ -1161,8 +1159,8 @@ rule (modulo E) Terminal_Sends_GenerateAC_NoCDA:
 
 rule (modulo E) Terminal_Sends_GenerateAC_CDA:
    [
-   Terminal_Ready_For_Transaction( $Terminal, ~PAN, $Bank, $CA, PDOL,
-                                   <'CDA', furtherData>, pubkBank, pubkCard, CVM, encPIN
+   Terminal_Ready_For_Cryptogram( $Terminal, ~PAN, $Bank, $CA, PDOL,
+                                  <'CDA', furtherData>, pubkBank, pubkCard, CVM, encPIN
    ),
    In( acType )
    ]
@@ -1179,12 +1177,12 @@ rule (modulo E) Terminal_Sends_GenerateAC_CDA:
 
 rule (modulo E) Card_Responds_To_GenerateAC_NoCDA:
    [
-   Card_Ready_For_Transaction( ~PAN, PDOL, ATC, CVM ), !AIP( ~PAN, AIP ),
+   Card_Ready_For_Cryptogram( ~PAN, PDOL, ATC, CVM ), !AIP( ~PAN, AIP ),
    !Shk( ~PAN, ~MK ), !IssuingBank( ~PAN, $Bank ),
    In( <'GENERATE_AC', CID, 'NoCDA', CDOL1> )
    ]
   --[
-  Running( ~PAN, 'Null',
+  Running( ~PAN, 'Terminal',
            <'Card', 'Terminal', ~PAN, AIP, CVM, <PDOL, CDOL1>, ATC, 
             MAC(f(~MK, ATC), <PDOL, CDOL1>, AIP, ATC, <'IAD', CID>), 'IAD', CID>
   ),
@@ -1207,15 +1205,15 @@ rule (modulo E) Card_Responds_To_GenerateAC_NoCDA:
 
 rule (modulo E) Card_Responds_To_GenerateAC_CDA:
    [
-   Card_Ready_For_Transaction( ~PAN,
-                               <amount, country, currency, date, type, UN>, ATC, CVM
+   Card_Ready_For_Cryptogram( ~PAN,
+                              <amount, country, currency, date, type, UN>, ATC, CVM
    ),
    !LtkCard( ~PAN, ~privkCard ), !AIP( ~PAN, <'CDA', furtherData> ),
    !Shk( ~PAN, ~MK ), !IssuingBank( ~PAN, $Bank ), Fr( ~nc ),
    In( <'GENERATE_AC', CID, 'CDA', CDOL1> )
    ]
   --[
-  Running( ~PAN, ~nc,
+  Running( ~PAN, 'Terminal',
            <'Card', 'Terminal', ~PAN, <'CDA', furtherData>, CVM, 
             <<amount, country, currency, date, type, UN>, CDOL1>, ATC, 
             MAC(f(~MK, ATC), <<amount, country, currency, date, type, UN>, CDOL1>,
@@ -1705,7 +1703,7 @@ rule (modulo E) Card_Responds_To_Second_GenerateAC_NoCDA:
    )
    ]
   --[
-  Running( ~PAN, nc,
+  Running( ~PAN, 'Terminal',
            <'Card', 'Terminal', ~PAN, AIP, CVM, 
             <PDOL, CDOL1, 'ARC', DES3(f(~MK, ATC), (AC⊕p8('ARC')))>, ATC, 
             MAC(f(~MK, ATC), <PDOL, CDOL1, 'ARC', DES3(f(~MK, ATC), (AC⊕p8('ARC')))>,
@@ -1738,7 +1736,7 @@ rule (modulo E) Card_Responds_To_Second_GenerateAC_NoCDA:
      In( <'GENERATE_AC', 'TC', 'NoCDA', 'ARC', DES3(f(~MK, ATC), z)> )
      ]
     --[
-    Running( ~PAN, nc,
+    Running( ~PAN, 'Terminal',
              <'Card', 'Terminal', ~PAN, AIP, CVM, 
               <PDOL, CDOL1, 'ARC', DES3(f(~MK, ATC), z)>, ATC, 
               MAC(f(~MK, ATC), <PDOL, CDOL1, 'ARC', DES3(f(~MK, ATC), z)>, AIP, ATC,
@@ -1787,7 +1785,7 @@ rule (modulo E) Card_Responds_To_Second_GenerateAC_CDA:
    )
    ]
   --[
-  Running( ~PAN, ~nc,
+  Running( ~PAN, 'Terminal',
            <'Card', 'Terminal', ~PAN, <'CDA', furtherData>, CVM, 
             <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
              DES3(f(~MK, ATC), (AC⊕p8('ARC')))>, 
@@ -1850,7 +1848,7 @@ rule (modulo E) Card_Responds_To_Second_GenerateAC_CDA:
      In( <'GENERATE_AC', 'TC', 'CDA', 'ARC', DES3(f(~MK, ATC), z)> )
      ]
     --[
-    Running( ~PAN, ~nc,
+    Running( ~PAN, 'Terminal',
              <'Card', 'Terminal', ~PAN, <'CDA', furtherData>, CVM, 
               <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                DES3(f(~MK, ATC), z)>, 
@@ -2081,7 +2079,7 @@ rule (modulo E) Terminal_Commits_ARQC:
   --[
   TerminalAccepts( <~PAN, <'SDA', furtherData>, 'EncPIN', X, ATC, AC, IAD>
   ),
-  Commit( nc, ~PAN,
+  Commit( 'Terminal', ~PAN,
           <'Card', 'Terminal', ~PAN, <'SDA', furtherData>, 'EncPIN', X, ATC, AC, 
            IAD>
   ),
@@ -2262,9 +2260,10 @@ qed
 
 lemma executable:
   exists-trace
-  "∃ Bank PAN nc t #i #j #k #l.
-    (((((((((#i < #j) ∧ (Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i)) ∧
-           (Commit( nc, PAN, <'Card', 'Terminal', t> ) @ #j)) ∧
+  "∃ Bank PAN t #i #j #k #l.
+    (((((((((#i < #j) ∧
+            (Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i)) ∧
+           (Commit( 'Terminal', PAN, <'Card', 'Terminal', t> ) @ #j)) ∧
           (#k < #l)) ∧
          (Running( PAN, Bank, <'Card', 'Bank', t> ) @ #k)) ∧
         (Commit( Bank, PAN, <'Card', 'Bank', t> ) @ #l)) ∧
@@ -2274,9 +2273,9 @@ lemma executable:
     (¬(∃ A #a. Compromise( A ) @ #a))"
 /*
 guarded formula characterizing all satisfying traces:
-"∃ Bank PAN nc t #i #j #k #l.
-  (Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i) ∧
-  (Commit( nc, PAN, <'Card', 'Terminal', t> ) @ #j) ∧
+"∃ Bank PAN t #i #j #k #l.
+  (Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i) ∧
+  (Commit( 'Terminal', PAN, <'Card', 'Terminal', t> ) @ #j) ∧
   (Running( PAN, Bank, <'Card', 'Bank', t> ) @ #k) ∧
   (Commit( Bank, PAN, <'Card', 'Bank', t> ) @ #l)
  ∧
@@ -2288,14 +2287,14 @@ guarded formula characterizing all satisfying traces:
   (∀ A #a. (Compromise( A ) @ #a) ⇒ ⊥)"
 */
 simplify
-solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
+solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
   case Card_Responds_To_GenerateAC_CDA
   solve( !Shk( ~PAN, ~MK ) ▶₃ #i )
     case Create_Card
     solve( !IssuingBank( ~PAN, $Bank ) ▶₄ #i )
       case Create_Card
-      solve( Card_Ready_For_Transaction( ~PAN,
-                                         <amount, country, currency, date, type, UN>, ATC, CVM
+      solve( Card_Ready_For_Cryptogram( ~PAN,
+                                        <amount, country, currency, date, type, UN>, ATC, CVM
              ) ▶₀ #i )
         case Card_Processes_CVM_NoPIN_case_1
         by solve( !LtkCard( ~PAN, ~privkCard ) ▶₁ #i )
@@ -2305,7 +2304,7 @@ solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
           case Set_Records_NotSDA
           solve( !AIP( ~PAN, <'CDA', furtherData> ) ▶₂ #i )
             case Create_Card
-            by solve( Commit( ~nc, ~PAN,
+            by solve( Commit( 'Terminal', ~PAN,
                               <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'NoPIN', 
                                <<amount, country, currency, date, type, UN>, CDOL1>, ~ATC, 
                                MAC(f(~MK, ~ATC), <<amount, country, currency, date, type, UN>, CDOL1>,
@@ -2329,7 +2328,7 @@ solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
           case Set_Records_NotSDA
           solve( !AIP( ~PAN, <'CDA', furtherData> ) ▶₂ #i )
             case Create_Card
-            by solve( Commit( ~nc, ~PAN,
+            by solve( Commit( 'Terminal', ~PAN,
                               <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                                <<amount, country, currency, date, type, UN>, CDOL1>, ~ATC, 
                                MAC(f(~MK, ~ATC), <<amount, country, currency, date, type, UN>, CDOL1>,
@@ -2350,7 +2349,7 @@ solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
           case Set_Records_NotSDA
           solve( !AIP( ~PAN, <'CDA', furtherData> ) ▶₂ #i )
             case Create_Card
-            by solve( Commit( ~nc, ~PAN,
+            by solve( Commit( 'Terminal', ~PAN,
                               <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'EncPIN', 
                                <<amount, country, currency, date, type, UN>, CDOL1>, ~ATC, 
                                MAC(f(~MK, ~ATC), <<amount, country, currency, date, type, UN>, CDOL1>,
@@ -2408,7 +2407,7 @@ solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
               case Set_Records_NotSDA
               solve( !AIP( ~PAN, <'CDA', furtherData> ) ▶₂ #i )
                 case Create_Card
-                by solve( Commit( ~nc, ~PAN,
+                by solve( Commit( 'Terminal', ~PAN,
                                   <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                                    <<amount, country, currency, date, type, UN>, CDOL1>, ~ATC, 
                                    MAC(f(~MK, ~ATC), <<amount, country, currency, date, type, UN>, CDOL1>,
@@ -2423,7 +2422,7 @@ solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
               case Set_Records_NotSDA
               solve( !AIP( ~PAN, <'CDA', furtherData> ) ▶₂ #i )
                 case Create_Card
-                by solve( Commit( ~nc, ~PAN,
+                by solve( Commit( 'Terminal', ~PAN,
                                   <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                                    <<amount, country, currency, date, type, UN>, CDOL1>, ~ATC, 
                                    MAC(f(~MK, ~ATC), <<amount, country, currency, date, type, UN>, CDOL1>,
@@ -2444,7 +2443,7 @@ solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
               case Set_Records_NotSDA
               solve( !AIP( ~PAN, <'CDA', furtherData> ) ▶₂ #i )
                 case Create_Card
-                by solve( Commit( ~nc, ~PAN,
+                by solve( Commit( 'Terminal', ~PAN,
                                   <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                                    <<amount, country, currency, date, type, UN>, CDOL1>, ~ATC, 
                                    MAC(f(~MK, ~ATC), <<amount, country, currency, date, type, UN>, CDOL1>,
@@ -2459,7 +2458,7 @@ solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
               case Set_Records_NotSDA
               solve( !AIP( ~PAN, <'CDA', furtherData> ) ▶₂ #i )
                 case Create_Card
-                by solve( Commit( ~nc, ~PAN,
+                by solve( Commit( 'Terminal', ~PAN,
                                   <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                                    <<amount, country, currency, date, type, UN>, CDOL1>, ~ATC, 
                                    MAC(f(~MK, ~ATC), <<amount, country, currency, date, type, UN>, CDOL1>,
@@ -2480,7 +2479,7 @@ solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
               case Set_Records_NotSDA
               solve( !AIP( ~PAN, <'CDA', furtherData> ) ▶₂ #i )
                 case Create_Card
-                by solve( Commit( ~nc, ~PAN,
+                by solve( Commit( 'Terminal', ~PAN,
                                   <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                                    <<amount, country, currency, date, type, UN>, CDOL1>, ~ATC, 
                                    MAC(f(~MK, ~ATC), <<amount, country, currency, date, type, UN>, CDOL1>,
@@ -2495,7 +2494,7 @@ solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
               case Set_Records_NotSDA
               solve( !AIP( ~PAN, <'CDA', furtherData> ) ▶₂ #i )
                 case Create_Card
-                by solve( Commit( ~nc, ~PAN,
+                by solve( Commit( 'Terminal', ~PAN,
                                   <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                                    <<amount, country, currency, date, type, UN>, CDOL1>, ~ATC, 
                                    MAC(f(~MK, ~ATC), <<amount, country, currency, date, type, UN>, CDOL1>,
@@ -2516,7 +2515,7 @@ solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
               case Set_Records_NotSDA
               solve( !AIP( ~PAN, <'CDA', furtherData> ) ▶₂ #i )
                 case Create_Card
-                by solve( Commit( ~nc, ~PAN,
+                by solve( Commit( 'Terminal', ~PAN,
                                   <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                                    <<amount, country, currency, date, type, UN>, CDOL1>, ~ATC, 
                                    MAC(f(~MK, ~ATC), <<amount, country, currency, date, type, UN>, CDOL1>,
@@ -2531,7 +2530,7 @@ solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
               case Set_Records_NotSDA
               solve( !AIP( ~PAN, <'CDA', furtherData> ) ▶₂ #i )
                 case Create_Card
-                by solve( Commit( ~nc, ~PAN,
+                by solve( Commit( 'Terminal', ~PAN,
                                   <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                                    <<amount, country, currency, date, type, UN>, CDOL1>, ~ATC, 
                                    MAC(f(~MK, ~ATC), <<amount, country, currency, date, type, UN>, CDOL1>,
@@ -2552,7 +2551,7 @@ solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
               case Set_Records_NotSDA
               solve( !AIP( ~PAN, <'CDA', furtherData> ) ▶₂ #i )
                 case Create_Card
-                by solve( Commit( ~nc, ~PAN,
+                by solve( Commit( 'Terminal', ~PAN,
                                   <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                                    <<amount, country, currency, date, type, UN>, CDOL1>, ~ATC, 
                                    MAC(f(~MK, ~ATC), <<amount, country, currency, date, type, UN>, CDOL1>,
@@ -2567,7 +2566,7 @@ solve( Running( PAN, nc, <'Card', 'Terminal', t> ) @ #i )
               case Set_Records_NotSDA
               solve( !AIP( ~PAN, <'CDA', furtherData> ) ▶₂ #i )
                 case Create_Card
-                by solve( Commit( ~nc, ~PAN,
+                by solve( Commit( 'Terminal', ~PAN,
                                   <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                                    <<amount, country, currency, date, type, UN>, CDOL1>, ~ATC, 
                                    MAC(f(~MK, ~ATC), <<amount, country, currency, date, type, UN>, CDOL1>,
@@ -2685,9 +2684,9 @@ next
       case Create_Card
       solve( !IssuingBank( ~PAN, $Bank ) ▶₃ #i )
         case Create_Card
-        solve( Card_Ready_For_Transaction( ~PAN, PDOL, ATC, CVM ) ▶₀ #i )
+        solve( Card_Ready_For_Cryptogram( ~PAN, PDOL, ATC, CVM ) ▶₀ #i )
           case Card_Processes_CVM_NoPIN_case_1
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'SDA', $furtherData>, 'NoPIN', 
                              <PDOL, CDOL1>, ~ATC, 
                              MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <'SDA', $furtherData>, ~ATC,
@@ -2696,7 +2695,7 @@ next
                     ) @ #j )
         next
           case Card_Processes_CVM_NoPIN_case_2
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <auth, $furtherData>, 'NoPIN', <PDOL, CDOL1>, 
                              ~ATC, 
                              MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <auth, $furtherData>, ~ATC,
@@ -2705,7 +2704,7 @@ next
                     ) @ #j )
         next
           case Card_Processes_CVM_NoPIN_case_3
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, 'NoPIN', 
                              <PDOL, CDOL1>, ~ATC, 
                              MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <'DDA', $furtherData>, ~ATC,
@@ -2714,7 +2713,7 @@ next
                     ) @ #j )
         next
           case Card_Processes_CVM_OnlinePIN_case_1
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'SDA', $furtherData>, 'OnlinePIN', 
                              <PDOL, CDOL1>, ~ATC, 
                              MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <'SDA', $furtherData>, ~ATC,
@@ -2723,7 +2722,7 @@ next
                     ) @ #j )
         next
           case Card_Processes_CVM_OnlinePIN_case_2
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <auth, $furtherData>, 'OnlinePIN', 
                              <PDOL, CDOL1>, ~ATC, 
                              MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <auth, $furtherData>, ~ATC,
@@ -2732,7 +2731,7 @@ next
                     ) @ #j )
         next
           case Card_Processes_CVM_OnlinePIN_case_3
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, 'OnlinePIN', 
                              <PDOL, CDOL1>, ~ATC, 
                              MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <'DDA', $furtherData>, ~ATC,
@@ -2741,7 +2740,7 @@ next
                     ) @ #j )
         next
           case Card_Verifies_EncPIN_case_1
-          solve( Commit( 'Null', ~PAN,
+          solve( Commit( 'Terminal', ~PAN,
                          <'Card', 'Terminal', ~PAN, <auth, $furtherData>, 'EncPIN', 
                           <PDOL, CDOL1>, ~ATC, 
                           MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <auth, $furtherData>, ~ATC,
@@ -2753,7 +2752,7 @@ next
           qed
         next
           case Card_Verifies_EncPIN_case_2
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, 'EncPIN', 
                              <PDOL, CDOL1>, ~ATC, 
                              MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <'DDA', $furtherData>, ~ATC,
@@ -2766,7 +2765,7 @@ next
             case Terminal_Processes_CVM_PlainPIN_case_1
             solve( !KU( ~PAN ) @ #vk.23 )
               case Card_Responds_To_ReadRecord_NotDDA
-              by solve( Commit( 'Null', ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'SDA', $furtherData>, 'PlainPIN', 
                                  <PDOL, CDOL1>, ~ATC, 
                                  MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <'SDA', $furtherData>, ~ATC,
@@ -2778,7 +2777,7 @@ next
             case Terminal_Processes_CVM_PlainPIN_case_2
             solve( !KU( ~PAN ) @ #vk.23 )
               case Card_Responds_To_ReadRecord_NotDDA
-              by solve( Commit( 'Null', ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'SDA', $furtherData>, 'PlainPIN', 
                                  <PDOL, CDOL1>, ~ATC, 
                                  MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <'SDA', $furtherData>, ~ATC,
@@ -2790,7 +2789,7 @@ next
             case Terminal_Processes_CVM_PlainPIN_case_3
             solve( !KU( ~PAN ) @ #vk.26 )
               case Card_Responds_To_ReadRecord_NotDDA
-              by solve( Commit( 'Null', ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'SDA', $furtherData>, 'PlainPIN', 
                                  <PDOL, CDOL1>, ~ATC, 
                                  MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <'SDA', $furtherData>, ~ATC,
@@ -2802,7 +2801,7 @@ next
             case Terminal_Sends_Verify_EncryptedPIN_case_1
             solve( !KU( ~PAN ) @ #vk.23 )
               case Card_Responds_To_ReadRecord_NotDDA
-              by solve( Commit( 'Null', ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'SDA', $furtherData>, 'PlainPIN', 
                                  <PDOL, CDOL1>, ~ATC, 
                                  MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <'SDA', $furtherData>, ~ATC,
@@ -2814,7 +2813,7 @@ next
             case Terminal_Sends_Verify_EncryptedPIN_case_2
             solve( !KU( ~PAN ) @ #vk.26 )
               case Card_Responds_To_ReadRecord_NotDDA
-              by solve( Commit( 'Null', ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'SDA', $furtherData>, 'PlainPIN', 
                                  <PDOL, CDOL1>, ~ATC, 
                                  MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <'SDA', $furtherData>, ~ATC,
@@ -2829,7 +2828,7 @@ next
             case Terminal_Processes_CVM_PlainPIN_case_1
             solve( !KU( ~PAN ) @ #vk.22 )
               case Card_Responds_To_ReadRecord_NotDDA_case_1
-              by solve( Commit( 'Null', ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <auth, $furtherData>, 'PlainPIN', 
                                  <PDOL, CDOL1>, ~ATC, 
                                  MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <auth, $furtherData>, ~ATC,
@@ -2838,7 +2837,7 @@ next
                         ) @ #j )
             next
               case Card_Responds_To_ReadRecord_NotDDA_case_2
-              by solve( Commit( 'Null', ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <auth, $furtherData>, 'PlainPIN', 
                                  <PDOL, CDOL1>, ~ATC, 
                                  MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <auth, $furtherData>, ~ATC,
@@ -2853,7 +2852,7 @@ next
             case Terminal_Processes_CVM_PlainPIN_case_2
             solve( !KU( ~PAN ) @ #vk.23 )
               case Card_Responds_To_ReadRecord_NotDDA_case_1
-              by solve( Commit( 'Null', ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <auth, $furtherData>, 'PlainPIN', 
                                  <PDOL, CDOL1>, ~ATC, 
                                  MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <auth, $furtherData>, ~ATC,
@@ -2862,7 +2861,7 @@ next
                         ) @ #j )
             next
               case Card_Responds_To_ReadRecord_NotDDA_case_2
-              by solve( Commit( 'Null', ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <auth, $furtherData>, 'PlainPIN', 
                                  <PDOL, CDOL1>, ~ATC, 
                                  MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <auth, $furtherData>, ~ATC,
@@ -2877,7 +2876,7 @@ next
             case Terminal_Processes_CVM_PlainPIN_case_3
             solve( !KU( ~PAN ) @ #vk.26 )
               case Card_Responds_To_ReadRecord_NotDDA_case_1
-              by solve( Commit( 'Null', ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <auth, $furtherData>, 'PlainPIN', 
                                  <PDOL, CDOL1>, ~ATC, 
                                  MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <auth, $furtherData>, ~ATC,
@@ -2886,7 +2885,7 @@ next
                         ) @ #j )
             next
               case Card_Responds_To_ReadRecord_NotDDA_case_2
-              by solve( Commit( 'Null', ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <auth, $furtherData>, 'PlainPIN', 
                                  <PDOL, CDOL1>, ~ATC, 
                                  MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <auth, $furtherData>, ~ATC,
@@ -2901,7 +2900,7 @@ next
             case Terminal_Sends_Verify_EncryptedPIN_case_1
             solve( !KU( ~PAN ) @ #vk.23 )
               case Card_Responds_To_ReadRecord_NotDDA_case_1
-              by solve( Commit( 'Null', ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <auth, $furtherData>, 'PlainPIN', 
                                  <PDOL, CDOL1>, ~ATC, 
                                  MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <auth, $furtherData>, ~ATC,
@@ -2910,7 +2909,7 @@ next
                         ) @ #j )
             next
               case Card_Responds_To_ReadRecord_NotDDA_case_2
-              by solve( Commit( 'Null', ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <auth, $furtherData>, 'PlainPIN', 
                                  <PDOL, CDOL1>, ~ATC, 
                                  MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <auth, $furtherData>, ~ATC,
@@ -2925,7 +2924,7 @@ next
             case Terminal_Sends_Verify_EncryptedPIN_case_2
             solve( !KU( ~PAN ) @ #vk.26 )
               case Card_Responds_To_ReadRecord_NotDDA_case_1
-              by solve( Commit( 'Null', ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <auth, $furtherData>, 'PlainPIN', 
                                  <PDOL, CDOL1>, ~ATC, 
                                  MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <auth, $furtherData>, ~ATC,
@@ -2934,7 +2933,7 @@ next
                         ) @ #j )
             next
               case Card_Responds_To_ReadRecord_NotDDA_case_2
-              by solve( Commit( 'Null', ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <auth, $furtherData>, 'PlainPIN', 
                                  <PDOL, CDOL1>, ~ATC, 
                                  MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <auth, $furtherData>, ~ATC,
@@ -2952,7 +2951,7 @@ next
             case Terminal_Processes_CVM_PlainPIN_case_1
             solve( !KU( ~PAN ) @ #vk.25 )
               case Card_Responds_To_ReadRecord_DDA_case_1
-              by solve( Commit( 'Null', ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, 'PlainPIN', 
                                  <PDOL, CDOL1>, ~ATC, 
                                  MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <'DDA', $furtherData>, ~ATC,
@@ -2961,7 +2960,7 @@ next
                         ) @ #j )
             next
               case Card_Responds_To_ReadRecord_DDA_case_2
-              by solve( Commit( 'Null', ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, 'PlainPIN', 
                                  <PDOL, CDOL1>, ~ATC, 
                                  MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <'DDA', $furtherData>, ~ATC,
@@ -2976,7 +2975,7 @@ next
             case Terminal_Processes_CVM_PlainPIN_case_2
             solve( !KU( ~PAN ) @ #vk.26 )
               case Card_Responds_To_ReadRecord_DDA_case_1
-              by solve( Commit( 'Null', ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, 'PlainPIN', 
                                  <PDOL, CDOL1>, ~ATC, 
                                  MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <'DDA', $furtherData>, ~ATC,
@@ -2985,7 +2984,7 @@ next
                         ) @ #j )
             next
               case Card_Responds_To_ReadRecord_DDA_case_2
-              by solve( Commit( 'Null', ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, 'PlainPIN', 
                                  <PDOL, CDOL1>, ~ATC, 
                                  MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <'DDA', $furtherData>, ~ATC,
@@ -3000,7 +2999,7 @@ next
             case Terminal_Processes_CVM_PlainPIN_case_3
             solve( !KU( ~PAN ) @ #vk.30 )
               case Card_Responds_To_ReadRecord_DDA_case_1
-              by solve( Commit( 'Null', ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, 'PlainPIN', 
                                  <PDOL, CDOL1>, ~ATC, 
                                  MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <'DDA', $furtherData>, ~ATC,
@@ -3009,7 +3008,7 @@ next
                         ) @ #j )
             next
               case Card_Responds_To_ReadRecord_DDA_case_2
-              by solve( Commit( 'Null', ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, 'PlainPIN', 
                                  <PDOL, CDOL1>, ~ATC, 
                                  MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <'DDA', $furtherData>, ~ATC,
@@ -3024,7 +3023,7 @@ next
             case Terminal_Sends_Verify_EncryptedPIN_case_1
             solve( !KU( ~PAN ) @ #vk.26 )
               case Card_Responds_To_ReadRecord_DDA_case_1
-              by solve( Commit( 'Null', ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, 'PlainPIN', 
                                  <PDOL, CDOL1>, ~ATC, 
                                  MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <'DDA', $furtherData>, ~ATC,
@@ -3033,7 +3032,7 @@ next
                         ) @ #j )
             next
               case Card_Responds_To_ReadRecord_DDA_case_2
-              by solve( Commit( 'Null', ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, 'PlainPIN', 
                                  <PDOL, CDOL1>, ~ATC, 
                                  MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <'DDA', $furtherData>, ~ATC,
@@ -3048,7 +3047,7 @@ next
             case Terminal_Sends_Verify_EncryptedPIN_case_2
             solve( !KU( ~PAN ) @ #vk.30 )
               case Card_Responds_To_ReadRecord_DDA_case_1
-              by solve( Commit( 'Null', ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, 'PlainPIN', 
                                  <PDOL, CDOL1>, ~ATC, 
                                  MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <'DDA', $furtherData>, ~ATC,
@@ -3057,7 +3056,7 @@ next
                         ) @ #j )
             next
               case Card_Responds_To_ReadRecord_DDA_case_2
-              by solve( Commit( 'Null', ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, 'PlainPIN', 
                                  <PDOL, CDOL1>, ~ATC, 
                                  MAC(f(~MK, ~ATC), <PDOL, CDOL1>, <'DDA', $furtherData>, ~ATC,
@@ -3086,7 +3085,7 @@ next
         case Card_Responds_To_GenerateAC_CDA_case_1
         solve( !LtkCard( ~PAN, ~privkCard ) ▶₁ #i )
           case Set_Records_NotSDA
-          by solve( Commit( ~nc.1, ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'NoPIN', 
                              <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                               DES3(f(~MK, ~ATC),
@@ -3113,7 +3112,7 @@ next
         case Card_Responds_To_GenerateAC_CDA_case_2
         solve( !LtkCard( ~PAN, ~privkCard ) ▶₁ #i )
           case Set_Records_NotSDA
-          by solve( Commit( ~nc.1, ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                              <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                               DES3(f(~MK, ~ATC),
@@ -3144,7 +3143,7 @@ next
             case Card_Responds_To_ReadRecord_NotDDA_case_1
             solve( !LtkCard( ~PAN, ~privkCard ) ▶₁ #i )
               case Set_Records_NotSDA
-              by solve( Commit( ~nc.1, ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                                  <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                                   DES3(f(~MK, ~ATC),
@@ -3172,7 +3171,7 @@ next
             case Card_Responds_To_ReadRecord_NotDDA_case_2
             solve( !LtkCard( ~PAN, ~privkCard ) ▶₁ #i )
               case Set_Records_NotSDA
-              by solve( Commit( ~nc.1, ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                                  <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                                   DES3(f(~MK, ~ATC),
@@ -3206,7 +3205,7 @@ next
             case Card_Responds_To_ReadRecord_NotDDA_case_1
             solve( !LtkCard( ~PAN, ~privkCard ) ▶₁ #i )
               case Set_Records_NotSDA
-              by solve( Commit( ~nc.1, ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                                  <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                                   DES3(f(~MK, ~ATC),
@@ -3234,7 +3233,7 @@ next
             case Card_Responds_To_ReadRecord_NotDDA_case_2
             solve( !LtkCard( ~PAN, ~privkCard ) ▶₁ #i )
               case Set_Records_NotSDA
-              by solve( Commit( ~nc.1, ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                                  <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                                   DES3(f(~MK, ~ATC),
@@ -3268,7 +3267,7 @@ next
             case Card_Responds_To_ReadRecord_NotDDA_case_1
             solve( !LtkCard( ~PAN, ~privkCard ) ▶₁ #i )
               case Set_Records_NotSDA
-              by solve( Commit( ~nc.1, ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                                  <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                                   DES3(f(~MK, ~ATC),
@@ -3296,7 +3295,7 @@ next
             case Card_Responds_To_ReadRecord_NotDDA_case_2
             solve( !LtkCard( ~PAN, ~privkCard ) ▶₁ #i )
               case Set_Records_NotSDA
-              by solve( Commit( ~nc.1, ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                                  <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                                   DES3(f(~MK, ~ATC),
@@ -3330,7 +3329,7 @@ next
             case Card_Responds_To_ReadRecord_NotDDA_case_1
             solve( !LtkCard( ~PAN, ~privkCard ) ▶₁ #i )
               case Set_Records_NotSDA
-              by solve( Commit( ~nc.1, ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                                  <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                                   DES3(f(~MK, ~ATC),
@@ -3358,7 +3357,7 @@ next
             case Card_Responds_To_ReadRecord_NotDDA_case_2
             solve( !LtkCard( ~PAN, ~privkCard ) ▶₁ #i )
               case Set_Records_NotSDA
-              by solve( Commit( ~nc.1, ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                                  <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                                   DES3(f(~MK, ~ATC),
@@ -3392,7 +3391,7 @@ next
             case Card_Responds_To_ReadRecord_NotDDA_case_1
             solve( !LtkCard( ~PAN, ~privkCard ) ▶₁ #i )
               case Set_Records_NotSDA
-              by solve( Commit( ~nc.1, ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                                  <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                                   DES3(f(~MK, ~ATC),
@@ -3420,7 +3419,7 @@ next
             case Card_Responds_To_ReadRecord_NotDDA_case_2
             solve( !LtkCard( ~PAN, ~privkCard ) ▶₁ #i )
               case Set_Records_NotSDA
-              by solve( Commit( ~nc.1, ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                                  <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                                   DES3(f(~MK, ~ATC),
@@ -3453,7 +3452,7 @@ next
         case Card_Responds_To_GenerateAC_CDA_case_4
         solve( !LtkCard( ~PAN, ~privkCard ) ▶₁ #i )
           case Set_Records_NotSDA
-          by solve( Commit( ~nc.1, ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'EncPIN', 
                              <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                               DES3(f(~MK, ~ATC),
@@ -3480,7 +3479,7 @@ next
         case Card_Responds_To_GenerateAC_NoCDA_case_1
         solve( !LtkCard( ~PAN, ~privkCard ) ▶₁ #i )
           case Set_Records_NotSDA
-          by solve( Commit( ~nc, ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'NoPIN', 
                              <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                               DES3(f(~MK, ~ATC),
@@ -3507,7 +3506,7 @@ next
         case Card_Responds_To_GenerateAC_NoCDA_case_2
         solve( !LtkCard( ~PAN, ~privkCard ) ▶₁ #i )
           case Set_Records_NotSDA
-          by solve( Commit( ~nc, ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                              <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                               DES3(f(~MK, ~ATC),
@@ -3538,7 +3537,7 @@ next
             case Card_Responds_To_ReadRecord_NotDDA_case_1
             solve( !LtkCard( ~PAN, ~privkCard ) ▶₁ #i )
               case Set_Records_NotSDA
-              by solve( Commit( ~nc, ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                                  <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                                   DES3(f(~MK, ~ATC),
@@ -3566,7 +3565,7 @@ next
             case Card_Responds_To_ReadRecord_NotDDA_case_2
             solve( !LtkCard( ~PAN, ~privkCard ) ▶₁ #i )
               case Set_Records_NotSDA
-              by solve( Commit( ~nc, ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                                  <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                                   DES3(f(~MK, ~ATC),
@@ -3600,7 +3599,7 @@ next
             case Card_Responds_To_ReadRecord_NotDDA_case_1
             solve( !LtkCard( ~PAN, ~privkCard ) ▶₁ #i )
               case Set_Records_NotSDA
-              by solve( Commit( ~nc, ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                                  <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                                   DES3(f(~MK, ~ATC),
@@ -3628,7 +3627,7 @@ next
             case Card_Responds_To_ReadRecord_NotDDA_case_2
             solve( !LtkCard( ~PAN, ~privkCard ) ▶₁ #i )
               case Set_Records_NotSDA
-              by solve( Commit( ~nc, ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                                  <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                                   DES3(f(~MK, ~ATC),
@@ -3662,7 +3661,7 @@ next
             case Card_Responds_To_ReadRecord_NotDDA_case_1
             solve( !LtkCard( ~PAN, ~privkCard ) ▶₁ #i )
               case Set_Records_NotSDA
-              by solve( Commit( ~nc, ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                                  <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                                   DES3(f(~MK, ~ATC),
@@ -3690,7 +3689,7 @@ next
             case Card_Responds_To_ReadRecord_NotDDA_case_2
             solve( !LtkCard( ~PAN, ~privkCard ) ▶₁ #i )
               case Set_Records_NotSDA
-              by solve( Commit( ~nc, ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                                  <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                                   DES3(f(~MK, ~ATC),
@@ -3724,7 +3723,7 @@ next
             case Card_Responds_To_ReadRecord_NotDDA_case_1
             solve( !LtkCard( ~PAN, ~privkCard ) ▶₁ #i )
               case Set_Records_NotSDA
-              by solve( Commit( ~nc, ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                                  <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                                   DES3(f(~MK, ~ATC),
@@ -3752,7 +3751,7 @@ next
             case Card_Responds_To_ReadRecord_NotDDA_case_2
             solve( !LtkCard( ~PAN, ~privkCard ) ▶₁ #i )
               case Set_Records_NotSDA
-              by solve( Commit( ~nc, ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                                  <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                                   DES3(f(~MK, ~ATC),
@@ -3786,7 +3785,7 @@ next
             case Card_Responds_To_ReadRecord_NotDDA_case_1
             solve( !LtkCard( ~PAN, ~privkCard ) ▶₁ #i )
               case Set_Records_NotSDA
-              by solve( Commit( ~nc, ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                                  <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                                   DES3(f(~MK, ~ATC),
@@ -3814,7 +3813,7 @@ next
             case Card_Responds_To_ReadRecord_NotDDA_case_2
             solve( !LtkCard( ~PAN, ~privkCard ) ▶₁ #i )
               case Set_Records_NotSDA
-              by solve( Commit( ~nc, ~PAN,
+              by solve( Commit( 'Terminal', ~PAN,
                                 <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                                  <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                                   DES3(f(~MK, ~ATC),
@@ -3847,7 +3846,7 @@ next
         case Card_Responds_To_GenerateAC_NoCDA_case_4
         solve( !LtkCard( ~PAN, ~privkCard ) ▶₁ #i )
           case Set_Records_NotSDA
-          by solve( Commit( ~nc, ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'EncPIN', 
                              <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                               DES3(f(~MK, ~ATC),
@@ -3881,7 +3880,7 @@ next
                              <~PAN, AIP, CVM, <PDOL, CDOL1>, ATC, AC, IAD>
            ) ▶₀ #i )
       case Card_Responds_To_GenerateAC_CDA_case_1
-      by solve( Commit( ~nc, ~PAN,
+      by solve( Commit( 'Terminal', ~PAN,
                         <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'NoPIN', 
                          <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                           DES3(f(~MK.1, ~ATC),
@@ -3904,7 +3903,7 @@ next
                 ) @ #j )
     next
       case Card_Responds_To_GenerateAC_CDA_case_2
-      by solve( Commit( ~nc, ~PAN,
+      by solve( Commit( 'Terminal', ~PAN,
                         <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'OnlinePIN', 
                          <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                           DES3(f(~MK.1, ~ATC),
@@ -3931,7 +3930,7 @@ next
         case Terminal_Processes_CVM_PlainPIN_case_1
         solve( !KU( ~PAN ) @ #vk.39 )
           case Card_Responds_To_ReadRecord_NotDDA_case_1
-          by solve( Commit( ~nc, ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                              <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -3955,7 +3954,7 @@ next
                     ) @ #j )
         next
           case Card_Responds_To_ReadRecord_NotDDA_case_2
-          by solve( Commit( ~nc, ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                              <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -3985,7 +3984,7 @@ next
         case Terminal_Processes_CVM_PlainPIN_case_2
         solve( !KU( ~PAN ) @ #vk.41 )
           case Card_Responds_To_ReadRecord_NotDDA_case_1
-          by solve( Commit( ~nc, ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                              <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4009,7 +4008,7 @@ next
                     ) @ #j )
         next
           case Card_Responds_To_ReadRecord_NotDDA_case_2
-          by solve( Commit( ~nc, ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                              <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4039,7 +4038,7 @@ next
         case Terminal_Processes_CVM_PlainPIN_case_3
         solve( !KU( ~PAN ) @ #vk.43 )
           case Card_Responds_To_ReadRecord_NotDDA_case_1
-          by solve( Commit( ~nc, ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                              <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4063,7 +4062,7 @@ next
                     ) @ #j )
         next
           case Card_Responds_To_ReadRecord_NotDDA_case_2
-          by solve( Commit( ~nc, ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                              <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4093,7 +4092,7 @@ next
         case Terminal_Sends_Verify_EncryptedPIN_case_1
         solve( !KU( ~PAN ) @ #vk.41 )
           case Card_Responds_To_ReadRecord_NotDDA_case_1
-          by solve( Commit( ~nc, ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                              <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4117,7 +4116,7 @@ next
                     ) @ #j )
         next
           case Card_Responds_To_ReadRecord_NotDDA_case_2
-          by solve( Commit( ~nc, ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                              <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4147,7 +4146,7 @@ next
         case Terminal_Sends_Verify_EncryptedPIN_case_2
         solve( !KU( ~PAN ) @ #vk.43 )
           case Card_Responds_To_ReadRecord_NotDDA_case_1
-          by solve( Commit( ~nc, ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                              <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4171,7 +4170,7 @@ next
                     ) @ #j )
         next
           case Card_Responds_To_ReadRecord_NotDDA_case_2
-          by solve( Commit( ~nc, ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'PlainPIN', 
                              <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4200,7 +4199,7 @@ next
       qed
     next
       case Card_Responds_To_GenerateAC_CDA_case_4
-      by solve( Commit( ~nc, ~PAN,
+      by solve( Commit( 'Terminal', ~PAN,
                         <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'EncPIN', 
                          <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
                           DES3(f(~MK.1, ~ATC),
@@ -4223,7 +4222,7 @@ next
                 ) @ #j )
     next
       case Card_Responds_To_GenerateAC_NoCDA_case_01
-      by solve( Commit( 'Null', ~PAN,
+      by solve( Commit( 'Terminal', ~PAN,
                         <'Card', 'Terminal', ~PAN, <'SDA', $furtherData>, 'NoPIN', 
                          <PDOL, CDOL1, 'ARC', 
                           DES3(f(~MK.1, ~ATC),
@@ -4246,7 +4245,7 @@ next
                 ) @ #j )
     next
       case Card_Responds_To_GenerateAC_NoCDA_case_02
-      by solve( Commit( 'Null', ~PAN,
+      by solve( Commit( 'Terminal', ~PAN,
                         <'Card', 'Terminal', ~PAN, <auth, $furtherData>, 'NoPIN', 
                          <PDOL, CDOL1, 'ARC', 
                           DES3(f(~MK.1, ~ATC),
@@ -4269,7 +4268,7 @@ next
                 ) @ #j )
     next
       case Card_Responds_To_GenerateAC_NoCDA_case_03
-      by solve( Commit( 'Null', ~PAN,
+      by solve( Commit( 'Terminal', ~PAN,
                         <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, 'NoPIN', 
                          <PDOL, CDOL1, 'ARC', 
                           DES3(f(~MK.1, ~ATC),
@@ -4292,7 +4291,7 @@ next
                 ) @ #j )
     next
       case Card_Responds_To_GenerateAC_NoCDA_case_04
-      by solve( Commit( 'Null', ~PAN,
+      by solve( Commit( 'Terminal', ~PAN,
                         <'Card', 'Terminal', ~PAN, <'SDA', $furtherData>, 'OnlinePIN', 
                          <PDOL, CDOL1, 'ARC', 
                           DES3(f(~MK.1, ~ATC),
@@ -4315,7 +4314,7 @@ next
                 ) @ #j )
     next
       case Card_Responds_To_GenerateAC_NoCDA_case_05
-      by solve( Commit( 'Null', ~PAN,
+      by solve( Commit( 'Terminal', ~PAN,
                         <'Card', 'Terminal', ~PAN, <auth, $furtherData>, 'OnlinePIN', 
                          <PDOL, CDOL1, 'ARC', 
                           DES3(f(~MK.1, ~ATC),
@@ -4338,7 +4337,7 @@ next
                 ) @ #j )
     next
       case Card_Responds_To_GenerateAC_NoCDA_case_06
-      by solve( Commit( 'Null', ~PAN,
+      by solve( Commit( 'Terminal', ~PAN,
                         <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, 'OnlinePIN', 
                          <PDOL, CDOL1, 'ARC', 
                           DES3(f(~MK.1, ~ATC),
@@ -4365,7 +4364,7 @@ next
         case Terminal_Processes_CVM_PlainPIN_case_1
         solve( !KU( ~PAN ) @ #vk.30 )
           case Card_Responds_To_ReadRecord_NotDDA
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'SDA', $furtherData>, 'PlainPIN', 
                              <PDOL, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4391,7 +4390,7 @@ next
         case Terminal_Processes_CVM_PlainPIN_case_2
         solve( !KU( ~PAN ) @ #vk.30 )
           case Card_Responds_To_ReadRecord_NotDDA
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'SDA', $furtherData>, 'PlainPIN', 
                              <PDOL, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4417,7 +4416,7 @@ next
         case Terminal_Processes_CVM_PlainPIN_case_3
         solve( !KU( ~PAN ) @ #vk.33 )
           case Card_Responds_To_ReadRecord_NotDDA
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'SDA', $furtherData>, 'PlainPIN', 
                              <PDOL, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4443,7 +4442,7 @@ next
         case Terminal_Sends_Verify_EncryptedPIN_case_1
         solve( !KU( ~PAN ) @ #vk.30 )
           case Card_Responds_To_ReadRecord_NotDDA
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'SDA', $furtherData>, 'PlainPIN', 
                              <PDOL, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4469,7 +4468,7 @@ next
         case Terminal_Sends_Verify_EncryptedPIN_case_2
         solve( !KU( ~PAN ) @ #vk.33 )
           case Card_Responds_To_ReadRecord_NotDDA
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'SDA', $furtherData>, 'PlainPIN', 
                              <PDOL, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4498,7 +4497,7 @@ next
         case Terminal_Processes_CVM_PlainPIN_case_1
         solve( !KU( ~PAN ) @ #vk.29 )
           case Card_Responds_To_ReadRecord_NotDDA_case_1
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <auth, $furtherData>, 'PlainPIN', 
                              <PDOL, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4521,7 +4520,7 @@ next
                     ) @ #j )
         next
           case Card_Responds_To_ReadRecord_NotDDA_case_2
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <auth, $furtherData>, 'PlainPIN', 
                              <PDOL, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4550,7 +4549,7 @@ next
         case Terminal_Processes_CVM_PlainPIN_case_2
         solve( !KU( ~PAN ) @ #vk.30 )
           case Card_Responds_To_ReadRecord_NotDDA_case_1
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <auth, $furtherData>, 'PlainPIN', 
                              <PDOL, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4573,7 +4572,7 @@ next
                     ) @ #j )
         next
           case Card_Responds_To_ReadRecord_NotDDA_case_2
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <auth, $furtherData>, 'PlainPIN', 
                              <PDOL, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4602,7 +4601,7 @@ next
         case Terminal_Processes_CVM_PlainPIN_case_3
         solve( !KU( ~PAN ) @ #vk.33 )
           case Card_Responds_To_ReadRecord_NotDDA_case_1
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <auth, $furtherData>, 'PlainPIN', 
                              <PDOL, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4625,7 +4624,7 @@ next
                     ) @ #j )
         next
           case Card_Responds_To_ReadRecord_NotDDA_case_2
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <auth, $furtherData>, 'PlainPIN', 
                              <PDOL, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4654,7 +4653,7 @@ next
         case Terminal_Sends_Verify_EncryptedPIN_case_1
         solve( !KU( ~PAN ) @ #vk.30 )
           case Card_Responds_To_ReadRecord_NotDDA_case_1
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <auth, $furtherData>, 'PlainPIN', 
                              <PDOL, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4677,7 +4676,7 @@ next
                     ) @ #j )
         next
           case Card_Responds_To_ReadRecord_NotDDA_case_2
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <auth, $furtherData>, 'PlainPIN', 
                              <PDOL, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4706,7 +4705,7 @@ next
         case Terminal_Sends_Verify_EncryptedPIN_case_2
         solve( !KU( ~PAN ) @ #vk.33 )
           case Card_Responds_To_ReadRecord_NotDDA_case_1
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <auth, $furtherData>, 'PlainPIN', 
                              <PDOL, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4729,7 +4728,7 @@ next
                     ) @ #j )
         next
           case Card_Responds_To_ReadRecord_NotDDA_case_2
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <auth, $furtherData>, 'PlainPIN', 
                              <PDOL, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4761,7 +4760,7 @@ next
         case Terminal_Processes_CVM_PlainPIN_case_1
         solve( !KU( ~PAN ) @ #vk.32 )
           case Card_Responds_To_ReadRecord_DDA_case_1
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, 'PlainPIN', 
                              <PDOL, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4784,7 +4783,7 @@ next
                     ) @ #j )
         next
           case Card_Responds_To_ReadRecord_DDA_case_2
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, 'PlainPIN', 
                              <PDOL, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4813,7 +4812,7 @@ next
         case Terminal_Processes_CVM_PlainPIN_case_2
         solve( !KU( ~PAN ) @ #vk.33 )
           case Card_Responds_To_ReadRecord_DDA_case_1
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, 'PlainPIN', 
                              <PDOL, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4836,7 +4835,7 @@ next
                     ) @ #j )
         next
           case Card_Responds_To_ReadRecord_DDA_case_2
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, 'PlainPIN', 
                              <PDOL, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4865,7 +4864,7 @@ next
         case Terminal_Processes_CVM_PlainPIN_case_3
         solve( !KU( ~PAN ) @ #vk.37 )
           case Card_Responds_To_ReadRecord_DDA_case_1
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, 'PlainPIN', 
                              <PDOL, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4888,7 +4887,7 @@ next
                     ) @ #j )
         next
           case Card_Responds_To_ReadRecord_DDA_case_2
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, 'PlainPIN', 
                              <PDOL, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4917,7 +4916,7 @@ next
         case Terminal_Sends_Verify_EncryptedPIN_case_1
         solve( !KU( ~PAN ) @ #vk.33 )
           case Card_Responds_To_ReadRecord_DDA_case_1
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, 'PlainPIN', 
                              <PDOL, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4940,7 +4939,7 @@ next
                     ) @ #j )
         next
           case Card_Responds_To_ReadRecord_DDA_case_2
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, 'PlainPIN', 
                              <PDOL, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4969,7 +4968,7 @@ next
         case Terminal_Sends_Verify_EncryptedPIN_case_2
         solve( !KU( ~PAN ) @ #vk.37 )
           case Card_Responds_To_ReadRecord_DDA_case_1
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, 'PlainPIN', 
                              <PDOL, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -4992,7 +4991,7 @@ next
                     ) @ #j )
         next
           case Card_Responds_To_ReadRecord_DDA_case_2
-          by solve( Commit( 'Null', ~PAN,
+          by solve( Commit( 'Terminal', ~PAN,
                             <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, 'PlainPIN', 
                              <PDOL, CDOL1, 'ARC', 
                               DES3(f(~MK.1, ~ATC),
@@ -5020,7 +5019,7 @@ next
       qed
     next
       case Card_Responds_To_GenerateAC_NoCDA_case_10
-      solve( Commit( 'Null', ~PAN,
+      solve( Commit( 'Terminal', ~PAN,
                      <'Card', 'Terminal', ~PAN, <auth, $furtherData>, 'EncPIN', 
                       <PDOL, CDOL1, 'ARC', 
                        DES3(f(~MK.1, ~ATC),
@@ -5046,7 +5045,7 @@ next
       qed
     next
       case Card_Responds_To_GenerateAC_NoCDA_case_11
-      by solve( Commit( 'Null', ~PAN,
+      by solve( Commit( 'Terminal', ~PAN,
                         <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, 'EncPIN', 
                          <PDOL, CDOL1, 'ARC', 
                           DES3(f(~MK.1, ~ATC),
@@ -5119,7 +5118,7 @@ guarded formula characterizing all counter-examples:
 simplify
 solve( Commit( T, P, <r, 'Terminal', t> ) @ #i )
   case Terminal_Commits_ARQC
-  by solve( Terminal_Received_SecondAC( $Terminal, $Bank, $CA, T,
+  by solve( Terminal_Received_SecondAC( $Terminal, $Bank, $CA, nc,
                                         <~PAN, <'SDA', furtherData>, 'EncPIN', X, ATC, AC, IAD>, ~channelID
             ) ▶₀ #i )
 qed
@@ -5278,6 +5277,8 @@ summary of summaries:
 
 analyzed: models-n-proofs/contact/Contact_SDA_EncPIN_Online.spthy
 
+  output:          models-n-proofs/contact/Contact_SDA_EncPIN_Online.proof
+  processing time: 702.528694459s
   ARPC_source (all-traces): verified (22 steps)
   executable (exists-trace): falsified - no trace found (336 steps)
   bank_accepts (all-traces): verified (2 steps)
@@ -5288,5 +5289,3 @@ analyzed: models-n-proofs/contact/Contact_SDA_EncPIN_Online.spthy
   secrecy_PAN (all-traces): falsified - found trace (6 steps)
 
 ==============================================================================
-3911.24user 1985.13system 12:20.63elapsed 796%CPU (0avgtext+0avgdata 9455584maxresident)k
-0inputs+26392outputs (0major+121378930minor)pagefaults 0swaps
