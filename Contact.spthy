@@ -286,7 +286,7 @@ rule Terminal_Processes_CVM_NoPIN:
     [ Terminal_Ready_For_CVM($Terminal, ~PAN, $Bank, $CA, PDOL,
         AIP, pubkBank, pubkCard, 'NoPIN') ]
   -->
-    [ Terminal_Ready_For_Transaction($Terminal, ~PAN, $Bank, $CA, PDOL,
+    [ Terminal_Ready_For_Cryptogram($Terminal, ~PAN, $Bank, $CA, PDOL,
         AIP, pubkBank, pubkCard, 'NoPIN', 'Null') ]
 
 rule Card_Processes_CVM_NoPIN:
@@ -295,7 +295,7 @@ rule Card_Processes_CVM_NoPIN:
   --[ //cannot downgrade to No PIN here if Online PIN is supported, this is
       //because if no CVM is requested by the terminal it can be Online PIN
       NEq(CVM, 'OnlinePIN') ]->
-    [ Card_Ready_For_Transaction(~PAN, PDOL, ATC, 'NoPIN') ]
+    [ Card_Ready_For_Cryptogram(~PAN, PDOL, ATC, 'NoPIN') ]
       
 //Online PIN
 rule Terminal_Processes_CVM_OnlinePIN:
@@ -306,14 +306,14 @@ rule Terminal_Processes_CVM_OnlinePIN:
         AIP, pubkBank, pubkCard, 'OnlinePIN'),
       !Entered_PIN(~PAN, PIN) ]
   --[ ActiveTransaction($Terminal, ~UN) ]->
-    [ Terminal_Ready_For_Transaction($Terminal, ~PAN, $Bank, $CA,
+    [ Terminal_Ready_For_Cryptogram($Terminal, ~PAN, $Bank, $CA,
         PDOL, AIP, pubkBank, pubkCard, 'OnlinePIN', encPIN) ]
 
 rule Card_Processes_CVM_OnlinePIN:
     [ Card_Ready_For_CVM(~PAN, PDOL, ATC),
       !SupportedCVM(~PAN, 'OnlinePIN') ]
   -->
-    [ Card_Ready_For_Transaction(~PAN, PDOL, ATC, 'OnlinePIN') ]
+    [ Card_Ready_For_Cryptogram(~PAN, PDOL, ATC, 'OnlinePIN') ]
 
 //Plaintext PIN
 rule Terminal_Processes_CVM_PlainPIN:
@@ -332,7 +332,7 @@ rule Card_Verifies_PlainPIN:
       !PIN(~PAN, PIN) ]
   -->
     [ Out('9000'), //PIN ok message
-      Card_Ready_For_Transaction(~PAN, PDOL, ATC, 'PlainPIN') ]
+      Card_Ready_For_Cryptogram(~PAN, PDOL, ATC, 'PlainPIN') ]
 
 //this one also works for Offline Enciphered PIN
 rule Terminal_Receives_Verify_Response:
@@ -340,7 +340,7 @@ rule Terminal_Receives_Verify_Response:
         AIP, pubkBank, pubkCard, CVM),
       In('9000') ]
   -->
-    [ Terminal_Ready_For_Transaction($Terminal, ~PAN, $Bank, $CA, PDOL,
+    [ Terminal_Ready_For_Cryptogram($Terminal, ~PAN, $Bank, $CA, PDOL,
         AIP, pubkBank, pubkCard, CVM, 'Null') ]
 
 //Offline Enciphered PIN
@@ -380,14 +380,14 @@ rule Card_Verifies_EncPIN:
       In(<'VERIFY', aenc{'7F', PIN, ~nc}pk(~privkCard)>) ]
   -->
     [ Out('9000'), //PIN ok message
-      Card_Ready_For_Transaction(~PAN, PDOL, ATC, 'EncPIN') ]
+      Card_Ready_For_Cryptogram(~PAN, PDOL, ATC, 'EncPIN') ]
 
 // ============== Application Cryptogram =================//
 rule Terminal_Sends_GenerateAC_NoCDA:
     let CDOL1 = <'TVR', CVM, 'HHMMSS'>
         X = <PDOL, CDOL1>
     in
-    [ Terminal_Ready_For_Transaction($Terminal, ~PAN, $Bank, $CA, PDOL,
+    [ Terminal_Ready_For_Cryptogram($Terminal, ~PAN, $Bank, $CA, PDOL,
         AIP, pubkBank, pubkCard, CVM, encPIN),
       In(acType) ]//let the adversary choose
   --[ NEq(fst(AIP), 'CDA') ]->
@@ -400,7 +400,7 @@ rule Terminal_Sends_GenerateAC_CDA:
         X = <PDOL, CDOL1>
         AIP = <'CDA', furtherData>
     in
-    [ Terminal_Ready_For_Transaction($Terminal, ~PAN, $Bank, $CA,
+    [ Terminal_Ready_For_Cryptogram($Terminal, ~PAN, $Bank, $CA,
         PDOL, AIP, pubkBank, pubkCard, CVM, encPIN),
       In(acType) ]//let the adversary choose
   -->
@@ -414,13 +414,13 @@ rule Card_Responds_To_GenerateAC_NoCDA:
         AC = MAC(f(~MK, ATC), X, AIP, ATC, IAD)
         transaction = <~PAN, AIP, CVM, X, ATC, AC, IAD>
     in
-    [ Card_Ready_For_Transaction(~PAN, PDOL, ATC, CVM),
+    [ Card_Ready_For_Cryptogram(~PAN, PDOL, ATC, CVM),
       !AIP(~PAN, AIP),
       !Shk(~PAN, ~MK),
       !IssuingBank(~PAN, $Bank),
       In(< 'GENERATE_AC', CID, 'NoCDA', CDOL1 >) ]
-  --[ //terminal's (run) id is unknown, thus use 'Null'
-      Running(~PAN, 'Null', <'Card', 'Terminal', transaction>),
+  --[ //terminal's (run) id is unknown, thus use 'Terminal'
+      Running(~PAN, 'Terminal', <'Card', 'Terminal', transaction>),
       Running(~PAN, $Bank, <'Card', 'Bank', transaction>) ]->
     [ Card_Produced_AC(~PAN, 'Null', CID, transaction),
       Out(<CID, ATC, AC, IAD>) ]
@@ -435,15 +435,14 @@ rule Card_Responds_To_GenerateAC_CDA:
         SDAD = sign{'05', ~nc, CID, AC, T, UN}~privkCard
         transaction = <~PAN, AIP, CVM, X, ATC, AC, IAD>
     in
-    [ Card_Ready_For_Transaction(~PAN, PDOL, ATC, CVM),
+    [ Card_Ready_For_Cryptogram(~PAN, PDOL, ATC, CVM),
       !LtkCard(~PAN, ~privkCard),
       !AIP(~PAN, AIP),
       !Shk(~PAN, ~MK),
       !IssuingBank(~PAN, $Bank),
       Fr(~nc),//card generates a new unpredictable number
       In(< 'GENERATE_AC', CID, 'CDA', CDOL1 >) ]
-  --[ //will use ~nc as the terminal's (run) id      
-      Running(~PAN, ~nc, <'Card', 'Terminal', transaction>),
+  --[ Running(~PAN, 'Terminal', <'Card', 'Terminal', transaction>),
       Running(~PAN, $Bank, <'Card', 'Bank', transaction>) ]->
     [ Card_Produced_AC(~PAN, ~nc, CID, transaction),
       Out(<CID, ATC, AC, <~nc, SDAD>, IAD>) ]
@@ -502,7 +501,7 @@ rule Terminal_Commits_TC:
     [ Terminal_Received_AC($Terminal, $Bank, $CA,
         nc, 'TC', transaction, ~channelID, pubkCard) ]
   --[ TerminalAccepts(transaction),
-      Commit(nc, ~PAN, <'Card', 'Terminal', transaction>),
+      Commit('Terminal', ~PAN, <'Card', 'Terminal', transaction>),
       Honest($CA), Honest($Bank), Honest($Terminal), Honest(~PAN) ]->
     [ ]
 endif(Offline)*/
@@ -628,7 +627,7 @@ rule Card_Responds_To_Second_GenerateAC_NoCDA:
     [ Card_Produced_AC(~PAN, nc, 'ARQC', transaction),
       !IssuingBank(~PAN, $Bank),
       In(<'GENERATE_AC', 'TC', 'NoCDA', CDOL2>) ]
-  --[ Running(~PAN, nc, <'Card', 'Terminal', transaction2>),
+  --[ Running(~PAN, 'Terminal', <'Card', 'Terminal', transaction2>),
       Running(~PAN, $Bank, <'Card', 'Bank', transaction2>) ]->
     [ Out(<'TC', ATC, TC, IAD2>) ]
 
@@ -652,8 +651,7 @@ rule Card_Responds_To_Second_GenerateAC_CDA:
       !IssuingBank(~PAN, $Bank),
       Fr(~nc),//card generates a new unpredictable number
       In(<'GENERATE_AC', 'TC', 'CDA', CDOL2>) ]
-  --[ //will use nc as the terminal's (run) id      
-      Running(~PAN, ~nc, <'Card', 'Terminal', transaction2>),
+  --[ Running(~PAN, 'Terminal', <'Card', 'Terminal', transaction2>),
       Running(~PAN, $Bank, <'Card', 'Bank', transaction2>) ]->
     [ Out(<'TC', ATC, TC, <~nc, SDAD>, IAD2>) ]
 
@@ -706,7 +704,7 @@ rule Terminal_Commits_ARQC:
     [ Terminal_Received_SecondAC($Terminal, $Bank, $CA, 
         nc, transaction, ~channelID) ]
   --[ TerminalAccepts(transaction),
-      Commit(nc, ~PAN, <'Card', 'Terminal', transaction>),
+      Commit('Terminal', ~PAN, <'Card', 'Terminal', transaction>),
       //cannot have a second commit with bank here
       //if we do, agreement trivially fails
       //Commit($Terminal, $Bank, <'Bank', 'Terminal', transaction>), 
@@ -799,10 +797,10 @@ lemma ARPC_source [sources]:
 
 lemma executable:
   exists-trace
-  "Ex Bank PAN nc t #i #j #k #l.
+  "Ex Bank PAN t #i #j #k #l.
     i < j & //Card-Terminal agreement
-    Running(PAN, nc, <'Card', 'Terminal', t>)@i &
-    Commit(nc, PAN, <'Card', 'Terminal', t>)@j &
+    Running(PAN, 'Terminal', <'Card', 'Terminal', t>)@i &
+    Commit('Terminal', PAN, <'Card', 'Terminal', t>)@j &
     k < l & //Card-Bank agreement
     Running(PAN, Bank, <'Card', 'Bank', t>)@k &
     Commit(Bank, PAN, <'Card', 'Bank', t>)@l &      
