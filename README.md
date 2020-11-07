@@ -1,8 +1,6 @@
 # EMVerify
 
-This is a [Tamarin](https://tamarin-prover.github.io/) model of the EMV standard and is the complementary material for our IEEE S&P 2021 paper **The EMV Standard: Break, Fix, Verify**. Details on this work available at https://emvrace.github.io.
-
-This repository has been updated **after** the production of the final version of our paper, including the re-execution of the full-scale analysis with newer Tamarin versions. Therefore, some security-irrelevant data about the models and proofs (e.g. analysis runtime) reported here might differ from that of the paper. The actual security analysis results do **not** change.
+This is a [Tamarin](https://tamarin-prover.github.io/) model of the EMV standard and is the complementary material for our IEEE S&P 2021 paper **The EMV Standard: Break, Fix, Verify**. Details on this work are available at https://emvrace.github.io.
 
 ## Folder layout
 
@@ -75,6 +73,8 @@ We have split our analysis of the **40** target models into three groups:
 The auto-generated models allow for any type of transactions to take place, the properties are verified only for **accepted transactions that follow the selected target configuration**. All target models are the same except for the rules that produce the `Commit` facts. Such rules do not model any interaction with the adversary, the network, or any other agent, i.e., they are simply rules to produce the `Commit` facts.
 
 All proofs were constructed using Tamarin version 1.7.0 (git revision: 2884fce8c40e3e5bdb87526214652696e089326d, branch: develop) on a computing server running Ubuntu 16.04.3 with two Intel(R) Xeon(R) E5-2650 v4 @ 2.20GHz CPUs (with 12 cores each) and 256GB of RAM. Here we used 10 threads and at most 20GB of RAM per target model.
+
+The models have been (minor-)edited after the production of the final version of our paper, and we have re-run the full-scale analysis with a newer Tamarin version. Therefore, the metadata about the models and proofs (e.g. analysis runtime) reported here might differ from that of the paper. The results for the security properties do **not** change.
 
 ## Auto-generation of target models
 
