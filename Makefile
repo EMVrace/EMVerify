@@ -176,8 +176,8 @@ contact:
 	$(MAKE) generic=Contact auth=CDA CVM=OnlinePIN authz=Online
 
 html: #write results in HTML format
-	./tools/collect models-n-proofs/contact/ #--output=results-contact.html --columns=tools/columns.txt --tex-add=tools/tex-add.txt
-	./tools/collect models-n-proofs/contactless/ #--output=results-contactless.html --columns=tools/columns.txt --tex-add=tools/tex-add.txt
+	./tools/collect models-n-proofs/contact/ --output=results-contact.html #--columns=tools/columns.txt --tex-add=tools/tex-add.txt
+	./tools/collect models-n-proofs/contactless/ --output=results-contactless.html #--columns=tools/columns.txt --tex-add=tools/tex-add.txt
 
 .PHONY: clean
 
