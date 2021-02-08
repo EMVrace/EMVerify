@@ -2,10 +2,12 @@ theory Visa_DDA_Low
 
 begin
 
-builtins:   signing, hashing, multiset, symmetric-encryption,
-            asymmetric-encryption, xor
+builtins:   signing, hashing, asymmetric-encryption, xor
 
-functions:  f/2, DES3/2, NEq/2, MAC/5, p8/1
+functions:  NEq/2,
+            f/2,
+            MAC/2, MAC_arpc/2,
+            p8/1
 
 rule Terminal_Bank_Network:
     [ Send(S, R, channelID, msg) ]-->[ Recv(S, R, channelID, msg) ]
@@ -326,7 +328,7 @@ rule Card_Responds_To_GenerateAC_NoCDA:
     let CDOL1 = <'TVR', CVM, 'HHMMSS'>
         X = <PDOL, CDOL1>
         IAD = <'IAD', CID>
-        AC = MAC(f(~MK, ATC), X, AIP, ATC, IAD)
+        AC = MAC(f(~MK, ATC), <X, AIP, ATC, IAD>)
         transaction = <~PAN, AIP, CVM, X, ATC, AC, IAD>
     in
     [ Card_Ready_For_Cryptogram(~PAN, PDOL, ATC),
@@ -345,7 +347,7 @@ rule Card_Responds_To_GenerateAC_CDA:
         X = <PDOL, CDOL1>
         IAD = <'IAD', CID>
         AIP = <'CDA', furtherData>
-        AC = MAC(f(~MK, ATC), X, AIP, ATC, IAD)
+        AC = MAC(f(~MK, ATC), <X, AIP, ATC, IAD>)
         T = h(<X, CID, ATC, AC, IAD>)
         SDAD = sign{'05', ~nc, CID, AC, T, UN}~privkCard
         transaction = <~PAN, AIP, CVM, X, ATC, AC, IAD>
@@ -397,8 +399,8 @@ rule Terminal_Receives_AC_CDA:
         <transaction, encPIN>) ]
 
 rule Bank_Receives_AC:
-    let AC = MAC(f(~MK, ATC), X, AIP, ATC, IAD)
-        ARPC = DES3(f(~MK, ATC), AC XOR p8('ARC'))
+    let AC = MAC(f(~MK, ATC), <X, AIP, ATC, IAD>)
+        ARPC = MAC_arpc(f(~MK, ATC), AC XOR p8('ARC'))
         transaction = <~PAN, AIP, CVM, X, ATC, AC, IAD>
     in
     [ Recv($Terminal, $Bank, <channelID, 'Mastercard', '1'>,
@@ -409,7 +411,7 @@ rule Bank_Receives_AC:
     [ Bank_Checked_AC($Bank, $Terminal, transaction, encPIN, channelID, ARPC) ]
 
 rule Bank_Receives_AC_Failed:
-    let correctAC = MAC(f(~MK, ATC), X, AIP, ATC, IAD)
+    let correctAC = MAC(f(~MK, ATC), <X, AIP, ATC, IAD>)
         transaction = <~PAN, AIP, CVM, X, ATC, AC, IAD>
     in
     [ Recv($Terminal, $Bank, <channelID, 'Mastercard', '1'>,
@@ -502,7 +504,7 @@ rule Card_Responds_To_GPO_EMV_Visa:
         CTQ = CVM
         IAD = <'IAD', CID>
         AIP = <'EMV', $furtherData>
-        AC = MAC(f(~MK, ATC), PDOL, AIP, ATC, IAD)
+        AC = MAC(f(~MK, ATC), <PDOL, AIP, ATC, IAD>)
         transaction = <~PAN, AIP, CTQ, PDOL, ATC, AC, IAD>
     in
     [ In(<'GET_PROCESSING_OPTIONS', PDOL>),
@@ -525,7 +527,7 @@ rule Card_Responds_To_GPO_DDA_Visa:
         CTQ = CVM
         IAD = <'IAD', CID>
         AIP = <'DDA', $furtherData>
-        AC = MAC(f(~MK, ATC), PDOL, AIP, ATC, IAD)
+        AC = MAC(f(~MK, ATC), <PDOL, AIP, ATC, IAD>)
     in
     [ In(<'GET_PROCESSING_OPTIONS', PDOL>),
       !Shk(~PAN, ~MK),
@@ -668,8 +670,8 @@ rule Terminal_Commits_TC_Visa:
     [ ]
 
 rule Bank_Receives_AC_Visa:
-    let AC = MAC(f(~MK, ATC), PDOL, AIP, ATC, IAD)
-        ARPC = DES3(f(~MK, ATC), AC XOR p8('ARC'))
+    let AC = MAC(f(~MK, ATC), <PDOL, AIP, ATC, IAD>)
+        ARPC = MAC_arpc(f(~MK, ATC), AC XOR p8('ARC'))
         transaction = <~PAN, AIP, CVM, PDOL, ATC, AC, IAD>
     in
     [ Recv($Terminal, $Bank, <channelID, 'Visa', '1'>,
@@ -681,7 +683,7 @@ rule Bank_Receives_AC_Visa:
         transaction, encPIN, channelID, ARPC) ]
 
 rule Bank_Receives_AC_Failed_Visa:
-    let correctAC = MAC(f(~MK, ATC), PDOL, AIP, ATC, IAD)
+    let correctAC = MAC(f(~MK, ATC), <PDOL, AIP, ATC, IAD>)
         transaction = <~PAN, AIP, CVM, PDOL, ATC, AC, IAD>
     in
     [ Recv($Terminal, $Bank, <channelID, 'Visa', '1'>, <transaction, encPIN>),

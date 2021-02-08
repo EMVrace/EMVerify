@@ -2,13 +2,15 @@ theory Contactless
 
 begin
 
-builtins:   signing, hashing, multiset, symmetric-encryption,
-            asymmetric-encryption, xor
+builtins:   signing, hashing, asymmetric-encryption, xor
 
-functions:  f/2, DES3/2, NEq/2, MAC/5, p8/1
+functions:  NEq/2, //inequality
+            f/2, //key derivation function
+            MAC/2, MAC_arpc/2, //cipher-based MACs
+            p8/1 //padding function, used in ARPC computation w/ Method 1
 
 //=============== Non-DY Channel ==============//
-// Secure Channel Terminal-Bank
+//secure channel for terminal-bank communication
 rule Terminal_Bank_Network:
     [ Send(S, R, channelID, msg) ]-->[ Recv(S, R, channelID, msg) ]
 
@@ -55,10 +57,10 @@ rule Create_Bank:
       !LtkCA($CA, ~privkCA) ]
   --[ Once($Bank),
       Role($Bank, 'Bank') ]->
-    [ !LtkBank($Bank, ~privkBank),//Bank's private key
-      !CertBank($Bank, cert),//Bank's cert issued by CA
-      !IssuingCA($Bank, $CA),//Bank's issuing $CA
-      Out(pubkBank)//release Bank's public key
+    [ !LtkBank($Bank, ~privkBank),//bank's private key
+      !CertBank($Bank, cert),//bank's cert
+      !IssuingCA($Bank, $CA),//bank's cert issuer
+      Out(pubkBank)//release the bank's public key
     ]
 
 //=========== Compromise rules =============//
@@ -104,12 +106,12 @@ rule Create_Card:
     let AIP = <auth, $furtherData>
         SSAD = sign{'03', ~PAN, ~expDate, AIP}~privkBank
     in
-    [ Fr(~PAN),//Card's ID
-      Fr(~expDate),//Card's expiration date
-      Fr(~MK),//Card and Bank's shared key
-      !LtkBank($Bank, ~privkBank),//Bank's private key
-      !CertBank($Bank, certBank),//Bank's certificate
-      !IssuingCA($Bank, $CA),//Bank's issuing $CA      
+    [ Fr(~PAN),//card number, serves as ID too
+      Fr(~expDate),//card's expiration date
+      Fr(~MK),//master key shared by the card and the bank
+      !LtkBank($Bank, ~privkBank),//bank's private key
+      !CertBank($Bank, certBank),//bank's cert
+      !IssuingCA($Bank, $CA),//bank's cert issuer      
       In(<auth, CVM>)//let the adversary choose the AIP and the CVM
     ]
   --[ Role(~PAN, 'Card'),
@@ -135,7 +137,7 @@ rule Set_Records_NotSDA:
         certCard = <cont, sign{cont}~privkBank>
     in
     [ Set_Records(~PAN, ~expDate, $CA, certBank, SSAD, CVM),
-      Fr(~privkCard),//Card's private key
+      Fr(~privkCard),//card's private key
       !AIP(~PAN, AIP),
       !IssuingBank(~PAN, $Bank),
       !LtkBank($Bank, ~privkBank) ]
@@ -146,7 +148,7 @@ rule Set_Records_NotSDA:
       !LtkCard(~PAN, ~privkCard),
       !Records(~PAN, <~PAN, ~expDate, $CA, certBank, certCard, CVM>) ]
 
-// ============== Initialization ====================//
+//============== Initialization ====================//
 //for simplicity, SELECT exchanges are ignored
 rule Terminal_Sends_GPO:
     let date = 'YYMMDD'
@@ -172,7 +174,7 @@ rule Card_Responds_To_GPO:
     [ Out(<AIP, 'AFL'>),
       Card_Responded_To_GPO(~PAN, PDOL, ATC)]
 
-// ============== Read Records ====================//
+//============== Read Records ====================//
 rule Terminal_Sends_ReadRecord:
     [ Terminal_Sent_GPO($Terminal, PDOL),
       In(<AIP, 'AFL'>) ]
@@ -198,7 +200,7 @@ rule Card_Responds_To_ReadRecord_DDA:
     [ Out(records),
       Card_Ready_For_DDA(~PAN, PDOL, ATC) ]
 
-// ============== Offline Data Authentication ====================//
+//============== Offline Data Authentication ====================//
 //SDA
 rule Terminal_Receives_Records_SDA:
     let AIP = <'SDA', furtherData>
@@ -212,9 +214,9 @@ rule Terminal_Receives_Records_SDA:
       !CertCA($CA, <<'01', $CA, pubkCA, $CA>, sign1>) ]
   --[ //verify CA's cert (this is possibly not needed)
       Eq( verify(sign1, <'01', $CA, pubkCA, $CA>, pubkCA), true),      
-      //verify Bank's cert
+      //verify the bank's cert
       Eq( verify(sign2, <'02', $Bank, pubkBank, $CA>, pubkCA), true),
-      //verify authentication data
+      //verify the SSAD
       Eq( verify(SSAD, <'03', ~PAN, expDate, AIP>, pubkBank), true)
     ]->
     [ Terminal_Ready_For_CVM($Terminal, ~PAN, $Bank, $CA,
@@ -234,9 +236,9 @@ rule Terminal_Receives_Records_CDA:
       !CertCA($CA, <<'01', $CA, pubkCA, $CA>, sign1>) ]
   --[ //verify CA's cert (this is possibly not needed)
       Eq( verify(sign1, <'01', $CA, pubkCA, $CA>, pubkCA), true),      
-      //verify Bank's cert
+      //verify the bank's cert
       Eq( verify(sign2, <'02', $Bank, pubkBank, $CA>, pubkCA), true),
-      //verify authentication data
+      //verify the card's cert
       Eq( verify(sign3, <'04', ~PAN, pubkCard, $Bank, CVM, AIP>, pubkBank), true)
     ]->
     [ Terminal_Ready_For_CVM($Terminal, ~PAN, $Bank, $CA,
@@ -256,9 +258,9 @@ rule Terminal_Receives_Records_DDA:
       !CertCA($CA, <<'01', $CA, pubkCA, $CA>, sign1>) ]
   --[ //verify CA's cert (this is possibly not needed)
       Eq( verify(sign1, <'01', $CA, pubkCA, $CA>, pubkCA), true),      
-      //verify Bank's cert
+      //verify the bank's cert
       Eq( verify(sign2, <'02', $Bank, pubkBank, $CA>, pubkCA), true),
-      //verify authentication data
+      //verify the card's cert
       Eq( verify(sign3,<'04', ~PAN, pubkCard, $Bank, CVM, AIP>, pubkBank), true)
     ]->
     [ Terminal_Ready_For_DDA($Terminal, ~PAN, $Bank, $CA,
@@ -295,7 +297,7 @@ rule Terminal_Receives_InternalAuthenticate_Response:
     [ Terminal_Ready_For_CVM($Terminal, ~PAN, $Bank, $CA,
         PDOL, AIP, pubkBank, pubkCard, CVM) ]
 
-// ============== Cardholder Verification ===================//
+//============== Cardholder Verification ===================//
 //No PIN
 rule Terminal_Processes_CVM_NoPIN:
     let PDOL = <$amount, country, currency, date, type, ~UN>
@@ -332,7 +334,7 @@ rule Terminal_Processes_CVM_ODCVM:
     [ Terminal_Ready_For_Cryptogram($Terminal, ~PAN, $Bank, $CA, PDOL,
         AIP, pubkBank, pubkCard, 'ODCVM', 'Null', CVM) ]
 
-// ============== Application Cryptogram =================//
+//============== Application Cryptogram =================//
 rule Terminal_Sends_GenerateAC_NoCDA:
     let CDOL1 = <'TVR', CVM, 'HHMMSS'>
         X = <PDOL, CDOL1>
@@ -362,7 +364,7 @@ rule Card_Responds_To_GenerateAC_NoCDA:
     let CDOL1 = <'TVR', CVM, 'HHMMSS'>
         X = <PDOL, CDOL1>
         IAD = <'IAD', CID>
-        AC = MAC(f(~MK, ATC), X, AIP, ATC, IAD)
+        AC = MAC(f(~MK, ATC), <X, AIP, ATC, IAD>)
         transaction = <~PAN, AIP, CVM, X, ATC, AC, IAD>
     in
     [ Card_Ready_For_Cryptogram(~PAN, PDOL, ATC),
@@ -381,7 +383,7 @@ rule Card_Responds_To_GenerateAC_CDA:
         X = <PDOL, CDOL1>
         IAD = <'IAD', CID>
         AIP = <'CDA', furtherData>
-        AC = MAC(f(~MK, ATC), X, AIP, ATC, IAD)
+        AC = MAC(f(~MK, ATC), <X, AIP, ATC, IAD>)
         T = h(<X, CID, ATC, AC, IAD>)
         SDAD = sign{'05', ~nc, CID, AC, T, UN}~privkCard
         transaction = <~PAN, AIP, CVM, X, ATC, AC, IAD>
@@ -456,8 +458,8 @@ endif(Mastercard)*/
 
 //============== Online Authorization ==============//
 rule Bank_Receives_AC:
-    let AC = MAC(f(~MK, ATC), X, AIP, ATC, IAD)
-        ARPC = DES3(f(~MK, ATC), AC XOR p8('ARC'))
+    let AC = MAC(f(~MK, ATC), <X, AIP, ATC, IAD>)
+        ARPC = MAC_arpc(f(~MK, ATC), AC XOR p8('ARC'))//could be modeled w/ senc
         transaction = <~PAN, AIP, CVM, X, ATC, AC, IAD>
     in
     [ Recv($Terminal, $Bank, <channelID, 'Mastercard', '1'>,
@@ -469,7 +471,7 @@ rule Bank_Receives_AC:
     [ Bank_Checked_AC($Bank, $Terminal, transaction, encPIN, channelID, ARPC) ]
 
 rule Bank_Receives_AC_Failed:
-    let correctAC = MAC(f(~MK, ATC), X, AIP, ATC, IAD)
+    let correctAC = MAC(f(~MK, ATC), <X, AIP, ATC, IAD>)
         transaction = <~PAN, AIP, CVM, X, ATC, AC, IAD>
     in
     [ Recv($Terminal, $Bank, <channelID, 'Mastercard', '1'>,
@@ -552,13 +554,13 @@ rule Create_Card_Visa:
         cont = <'04', ~PAN, pubkCard, $Bank>
         certCard = <cont, sign{cont}~privkBank>
     in
-    [ Fr(~PAN),//Card's ID
-      Fr(~expDate),//Card's expiration date
-      Fr(~privkCard),//Card's private key
-      Fr(~MK),//Card and Bank's shared key
-      !LtkBank($Bank, ~privkBank),//Bank's private key
-      !CertBank($Bank, certBank),//Bank's certificate
-      !IssuingCA($Bank, $CA)//Bank's issuing $CA
+    [ Fr(~PAN),//card number, serves as ID too
+      Fr(~expDate),//card's expiration date
+      Fr(~privkCard),//card's private key
+      Fr(~MK),//master key shared by the card and the bank
+      !LtkBank($Bank, ~privkBank),//bank's private key
+      !CertBank($Bank, certBank),//bank's cert
+      !IssuingCA($Bank, $CA)//bank's cert issuer
     ]
   --[ Role(~PAN, 'Card'),
       SecretPAN(~PAN),
@@ -606,7 +608,7 @@ rule Terminal_Sends_GPO_High_Visa:
     [ Out(<'GET_PROCESSING_OPTIONS', PDOL>),
       Terminal_Sent_GPO_Visa($Terminal, PDOL) ]
 
-// ========= Application Cryptogram =================//
+//========= Application Cryptogram =================//
 rule Card_Responds_To_GPO_EMV_Visa:
     let PDOL = <<acType, CVM>, amount, country, currency, date, type, UN>
         track2ED = <~PAN, ~expDate>
@@ -614,7 +616,7 @@ rule Card_Responds_To_GPO_EMV_Visa:
         CTQ = CVM//encoded this way for simplicity
         IAD = <'IAD', CID>
         AIP = <'EMV', $furtherData>
-        AC = MAC(f(~MK, ATC), PDOL, AIP, ATC, IAD)
+        AC = MAC(f(~MK, ATC), <PDOL, AIP, ATC, IAD>)
         transaction = <~PAN, AIP, CTQ, PDOL, ATC, AC, IAD>
     in
     [ In(<'GET_PROCESSING_OPTIONS', PDOL>),
@@ -638,7 +640,7 @@ rule Card_Responds_To_GPO_DDA_Visa:
         CTQ = CVM//encoded this way for simplicity
         IAD = <'IAD', CID>
         AIP = <'DDA', $furtherData>
-        AC = MAC(f(~MK, ATC), PDOL, AIP, ATC, IAD)
+        AC = MAC(f(~MK, ATC), <PDOL, AIP, ATC, IAD>)
     in
     [ In(<'GET_PROCESSING_OPTIONS', PDOL>),
       !Shk(~PAN, ~MK),
@@ -703,7 +705,7 @@ rule Terminal_Receives_Records_EMV_Visa:
     [ Terminal_Sent_ReadRecord_Visa($Terminal, PDOL, AIP, ~PAN,
         expDate, IAD, AC, 'ARQC', ATC, CTQ),      
       In(records),
-      //get the Bank's PK for online PIN
+      //get the bank's PK for online PIN
       !IssuingBank(~PAN, $Bank),
       !CertBank($Bank, <<'02', $Bank, pubkBank, $CA>, sign2>) ]
   -->
@@ -730,9 +732,9 @@ rule Terminal_Receives_Records_DDA_Visa:
       !CertCA($CA, <<'01', $CA, pubkCA, $CA>, sign1>) ]
   --[ //verify CA's cert (this is possibly not needed)
       Eq( verify(sign1, <'01', $CA, pubkCA, $CA>, pubkCA), true ),      
-      //verify Bank's cert
+      //verify the bank's cert
       Eq( verify(sign2, <'02', $Bank, pubkBank, $CA>, pubkCA), true ),
-      //verify Card's cert
+      //verify the card's cert
       Eq( verify(sign3, <'04', ~PAN, pubkCard, $Bank>, pubkBank), true ),
       //verify the SDAD
       Eq( verify(SDAD, d, pubkCard), true )
@@ -804,8 +806,8 @@ endif(Visa)*/
 
 //================ Online Authorization ===================//
 rule Bank_Receives_AC_Visa:
-    let AC = MAC(f(~MK, ATC), PDOL, AIP, ATC, IAD)
-        ARPC = DES3(f(~MK, ATC), AC XOR p8('ARC'))
+    let AC = MAC(f(~MK, ATC), <PDOL, AIP, ATC, IAD>)
+        ARPC = MAC_arpc(f(~MK, ATC), AC XOR p8('ARC'))//could be modeled w/ senc
         transaction = <~PAN, AIP, CVM, PDOL, ATC, AC, IAD>
     in
     [ Recv($Terminal, $Bank, <channelID, 'Visa', '1'>,
@@ -817,7 +819,7 @@ rule Bank_Receives_AC_Visa:
         transaction, encPIN, channelID, ARPC) ]
 
 rule Bank_Receives_AC_Failed_Visa:
-    let correctAC = MAC(f(~MK, ATC), PDOL, AIP, ATC, IAD)
+    let correctAC = MAC(f(~MK, ATC), <PDOL, AIP, ATC, IAD>)
         transaction = <~PAN, AIP, CVM, PDOL, ATC, AC, IAD>
     in
     [ Recv($Terminal, $Bank, <channelID, 'Visa', '1'>, <transaction, encPIN>),

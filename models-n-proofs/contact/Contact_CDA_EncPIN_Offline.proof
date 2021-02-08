@@ -2,13 +2,12 @@ theory Contact_CDA_EncPIN_Offline begin
 
 // Function signature and definition of the equational theory E
 
-builtins: multiset, xor
-functions: DES3/2, MAC/5, NEq/2, adec/2, aenc/2, f/2, fst/1, h/1, p8/1,
-           pair/2, pk/1, sdec/2, senc/2, sign/2, snd/1, true/0, verify/3
+builtins: xor
+functions: MAC/2, MAC_arpc/2, NEq/2, adec/2, aenc/2, f/2, fst/1, h/1,
+           p8/1, pair/2, pk/1, sign/2, snd/1, true/0, verify/3
 equations:
     adec(aenc(x.1, pk(x.2)), x.2) = x.1,
     fst(<x.1, x.2>) = x.1,
-    sdec(senc(x.1, x.2), x.2) = x.1,
     snd(<x.1, x.2>) = x.2,
     verify(sign(x.1, x.2), x.1, pk(x.2)) = true
 
@@ -1184,19 +1183,19 @@ rule (modulo E) Card_Responds_To_GenerateAC_NoCDA:
   --[
   Running( ~PAN, 'Terminal',
            <'Card', 'Terminal', ~PAN, AIP, CVM, <PDOL, CDOL1>, ATC, 
-            MAC(f(~MK, ATC), <PDOL, CDOL1>, AIP, ATC, <'IAD', CID>), 'IAD', CID>
+            MAC(f(~MK, ATC), <<PDOL, CDOL1>, AIP, ATC, 'IAD', CID>), 'IAD', CID>
   ),
   Running( ~PAN, $Bank,
            <'Card', 'Bank', ~PAN, AIP, CVM, <PDOL, CDOL1>, ATC, 
-            MAC(f(~MK, ATC), <PDOL, CDOL1>, AIP, ATC, <'IAD', CID>), 'IAD', CID>
+            MAC(f(~MK, ATC), <<PDOL, CDOL1>, AIP, ATC, 'IAD', CID>), 'IAD', CID>
   )
   ]->
    [
    Card_Produced_AC( ~PAN, 'Null', CID,
                      <~PAN, AIP, CVM, <PDOL, CDOL1>, ATC, 
-                      MAC(f(~MK, ATC), <PDOL, CDOL1>, AIP, ATC, <'IAD', CID>), 'IAD', CID>
+                      MAC(f(~MK, ATC), <<PDOL, CDOL1>, AIP, ATC, 'IAD', CID>), 'IAD', CID>
    ),
-   Out( <CID, ATC, MAC(f(~MK, ATC), <PDOL, CDOL1>, AIP, ATC, <'IAD', CID>), 
+   Out( <CID, ATC, MAC(f(~MK, ATC), <<PDOL, CDOL1>, AIP, ATC, 'IAD', CID>), 
          'IAD', CID>
    )
    ]
@@ -1216,15 +1215,17 @@ rule (modulo E) Card_Responds_To_GenerateAC_CDA:
   Running( ~PAN, 'Terminal',
            <'Card', 'Terminal', ~PAN, <'CDA', furtherData>, CVM, 
             <<amount, country, currency, date, type, UN>, CDOL1>, ATC, 
-            MAC(f(~MK, ATC), <<amount, country, currency, date, type, UN>, CDOL1>,
-                <'CDA', furtherData>, ATC, <'IAD', CID>), 
+            MAC(f(~MK, ATC),
+                <<<amount, country, currency, date, type, UN>, CDOL1>, 
+                 <'CDA', furtherData>, ATC, 'IAD', CID>), 
             'IAD', CID>
   ),
   Running( ~PAN, $Bank,
            <'Card', 'Bank', ~PAN, <'CDA', furtherData>, CVM, 
             <<amount, country, currency, date, type, UN>, CDOL1>, ATC, 
-            MAC(f(~MK, ATC), <<amount, country, currency, date, type, UN>, CDOL1>,
-                <'CDA', furtherData>, ATC, <'IAD', CID>), 
+            MAC(f(~MK, ATC),
+                <<<amount, country, currency, date, type, UN>, CDOL1>, 
+                 <'CDA', furtherData>, ATC, 'IAD', CID>), 
             'IAD', CID>
   )
   ]->
@@ -1232,20 +1233,24 @@ rule (modulo E) Card_Responds_To_GenerateAC_CDA:
    Card_Produced_AC( ~PAN, ~nc, CID,
                      <~PAN, <'CDA', furtherData>, CVM, 
                       <<amount, country, currency, date, type, UN>, CDOL1>, ATC, 
-                      MAC(f(~MK, ATC), <<amount, country, currency, date, type, UN>, CDOL1>,
-                          <'CDA', furtherData>, ATC, <'IAD', CID>), 
+                      MAC(f(~MK, ATC),
+                          <<<amount, country, currency, date, type, UN>, CDOL1>, 
+                           <'CDA', furtherData>, ATC, 'IAD', CID>), 
                       'IAD', CID>
    ),
    Out( <CID, ATC, 
-         MAC(f(~MK, ATC), <<amount, country, currency, date, type, UN>, CDOL1>,
-             <'CDA', furtherData>, ATC, <'IAD', CID>), 
+         MAC(f(~MK, ATC),
+             <<<amount, country, currency, date, type, UN>, CDOL1>, 
+              <'CDA', furtherData>, ATC, 'IAD', CID>), 
          <~nc, 
           sign(<'05', ~nc, CID, 
-                MAC(f(~MK, ATC), <<amount, country, currency, date, type, UN>, CDOL1>,
-                    <'CDA', furtherData>, ATC, <'IAD', CID>), 
+                MAC(f(~MK, ATC),
+                    <<<amount, country, currency, date, type, UN>, CDOL1>, 
+                     <'CDA', furtherData>, ATC, 'IAD', CID>), 
                 h(<<<amount, country, currency, date, type, UN>, CDOL1>, CID, ATC, 
-                   MAC(f(~MK, ATC), <<amount, country, currency, date, type, UN>, CDOL1>,
-                       <'CDA', furtherData>, ATC, <'IAD', CID>), 
+                   MAC(f(~MK, ATC),
+                       <<<amount, country, currency, date, type, UN>, CDOL1>, 
+                        <'CDA', furtherData>, ATC, 'IAD', CID>), 
                    'IAD', CID>), 
                 UN>,
                ~privkCard)
@@ -1539,8 +1544,8 @@ rule (modulo E) Bank_Receives_AC:
           <~PAN, AIP, CVM, 
            <<amount, country, currency, date, type, UN>, TVR, CVM, time>, ATC, 
            MAC(f(~MK, ATC),
-               <<amount, country, currency, date, type, UN>, TVR, CVM, time>, AIP, ATC,
-               IAD), 
+               <<<amount, country, currency, date, type, UN>, TVR, CVM, time>, AIP, 
+                ATC, IAD>), 
            IAD>, 
           encPIN>
    ),
@@ -1548,12 +1553,12 @@ rule (modulo E) Bank_Receives_AC:
    ]
   --[
   Once( <~PAN, ATC, 'Bank'> ),
-  OUT_1( DES3(f(~MK, ATC),
-              (
-               MAC(f(~MK, ATC),
-                   <<amount, country, currency, date, type, UN>, TVR, CVM, time>, AIP, ATC,
-                   IAD)⊕
-               p8('ARC')))
+  OUT_1( MAC_arpc(f(~MK, ATC),
+                  (
+                   MAC(f(~MK, ATC),
+                       <<<amount, country, currency, date, type, UN>, TVR, CVM, time>, AIP, 
+                        ATC, IAD>)⊕
+                   p8('ARC')))
   ),
   OneBank( )
   ]->
@@ -1562,16 +1567,16 @@ rule (modulo E) Bank_Receives_AC:
                     <~PAN, AIP, CVM, 
                      <<amount, country, currency, date, type, UN>, TVR, CVM, time>, ATC, 
                      MAC(f(~MK, ATC),
-                         <<amount, country, currency, date, type, UN>, TVR, CVM, time>, AIP, ATC,
-                         IAD), 
+                         <<<amount, country, currency, date, type, UN>, TVR, CVM, time>, AIP, 
+                          ATC, IAD>), 
                      IAD>,
                     encPIN, channelID,
-                    DES3(f(~MK, ATC),
-                         (
-                          MAC(f(~MK, ATC),
-                              <<amount, country, currency, date, type, UN>, TVR, CVM, time>, AIP, ATC,
-                              IAD)⊕
-                          p8('ARC')))
+                    MAC_arpc(f(~MK, ATC),
+                             (
+                              MAC(f(~MK, ATC),
+                                  <<<amount, country, currency, date, type, UN>, TVR, CVM, time>, AIP, 
+                                   ATC, IAD>)⊕
+                              p8('ARC')))
    )
    ]
 
@@ -1585,7 +1590,7 @@ rule (modulo E) Bank_Receives_AC_Failed:
    !Shk( ~PAN, ~MK )
    ]
   --[
-  NEq( MAC(f(~MK, ATC), X, AIP, ATC, IAD), AC ),
+  NEq( MAC(f(~MK, ATC), <X, AIP, ATC, IAD>), AC ),
   BankDeclines( <~PAN, AIP, CVM, X, ATC, AC, IAD> )
   ]->
    [ ]
@@ -1746,29 +1751,32 @@ rule (modulo E) Card_Responds_To_Second_GenerateAC_NoCDA:
    ),
    !IssuingBank( ~PAN, $Bank ),
    In( <'GENERATE_AC', 'TC', 'NoCDA', 'ARC', 
-        DES3(f(~MK, ATC), (AC⊕p8('ARC')))>
+        MAC_arpc(f(~MK, ATC), (AC⊕p8('ARC')))>
    )
    ]
   --[
   Running( ~PAN, 'Terminal',
            <'Card', 'Terminal', ~PAN, AIP, CVM, 
-            <PDOL, CDOL1, 'ARC', DES3(f(~MK, ATC), (AC⊕p8('ARC')))>, ATC, 
-            MAC(f(~MK, ATC), <PDOL, CDOL1, 'ARC', DES3(f(~MK, ATC), (AC⊕p8('ARC')))>,
-                AIP, ATC, <'IAD', 'TC'>), 
+            <PDOL, CDOL1, 'ARC', MAC_arpc(f(~MK, ATC), (AC⊕p8('ARC')))>, ATC, 
+            MAC(f(~MK, ATC),
+                <<PDOL, CDOL1, 'ARC', MAC_arpc(f(~MK, ATC), (AC⊕p8('ARC')))>, AIP, ATC, 
+                 'IAD', 'TC'>), 
             'IAD', 'TC'>
   ),
   Running( ~PAN, $Bank,
            <'Card', 'Bank', ~PAN, AIP, CVM, 
-            <PDOL, CDOL1, 'ARC', DES3(f(~MK, ATC), (AC⊕p8('ARC')))>, ATC, 
-            MAC(f(~MK, ATC), <PDOL, CDOL1, 'ARC', DES3(f(~MK, ATC), (AC⊕p8('ARC')))>,
-                AIP, ATC, <'IAD', 'TC'>), 
+            <PDOL, CDOL1, 'ARC', MAC_arpc(f(~MK, ATC), (AC⊕p8('ARC')))>, ATC, 
+            MAC(f(~MK, ATC),
+                <<PDOL, CDOL1, 'ARC', MAC_arpc(f(~MK, ATC), (AC⊕p8('ARC')))>, AIP, ATC, 
+                 'IAD', 'TC'>), 
             'IAD', 'TC'>
   )
   ]->
    [
    Out( <'TC', ATC, 
-         MAC(f(~MK, ATC), <PDOL, CDOL1, 'ARC', DES3(f(~MK, ATC), (AC⊕p8('ARC')))>,
-             AIP, ATC, <'IAD', 'TC'>), 
+         MAC(f(~MK, ATC),
+             <<PDOL, CDOL1, 'ARC', MAC_arpc(f(~MK, ATC), (AC⊕p8('ARC')))>, AIP, ATC, 
+              'IAD', 'TC'>), 
          'IAD', 'TC'>
    )
    ]
@@ -1780,28 +1788,31 @@ rule (modulo E) Card_Responds_To_Second_GenerateAC_NoCDA:
                        <~PAN, AIP, CVM, <PDOL, CDOL1>, ATC, AC, IAD>
      ),
      !IssuingBank( ~PAN, $Bank ),
-     In( <'GENERATE_AC', 'TC', 'NoCDA', 'ARC', DES3(f(~MK, ATC), z)> )
+     In( <'GENERATE_AC', 'TC', 'NoCDA', 'ARC', MAC_arpc(f(~MK, ATC), z)> )
      ]
     --[
     Running( ~PAN, 'Terminal',
              <'Card', 'Terminal', ~PAN, AIP, CVM, 
-              <PDOL, CDOL1, 'ARC', DES3(f(~MK, ATC), z)>, ATC, 
-              MAC(f(~MK, ATC), <PDOL, CDOL1, 'ARC', DES3(f(~MK, ATC), z)>, AIP, ATC,
-                  <'IAD', 'TC'>), 
+              <PDOL, CDOL1, 'ARC', MAC_arpc(f(~MK, ATC), z)>, ATC, 
+              MAC(f(~MK, ATC),
+                  <<PDOL, CDOL1, 'ARC', MAC_arpc(f(~MK, ATC), z)>, AIP, ATC, 'IAD', 'TC'
+                  >), 
               'IAD', 'TC'>
     ),
     Running( ~PAN, $Bank,
              <'Card', 'Bank', ~PAN, AIP, CVM, 
-              <PDOL, CDOL1, 'ARC', DES3(f(~MK, ATC), z)>, ATC, 
-              MAC(f(~MK, ATC), <PDOL, CDOL1, 'ARC', DES3(f(~MK, ATC), z)>, AIP, ATC,
-                  <'IAD', 'TC'>), 
+              <PDOL, CDOL1, 'ARC', MAC_arpc(f(~MK, ATC), z)>, ATC, 
+              MAC(f(~MK, ATC),
+                  <<PDOL, CDOL1, 'ARC', MAC_arpc(f(~MK, ATC), z)>, AIP, ATC, 'IAD', 'TC'
+                  >), 
               'IAD', 'TC'>
     )
     ]->
      [
      Out( <'TC', ATC, 
-           MAC(f(~MK, ATC), <PDOL, CDOL1, 'ARC', DES3(f(~MK, ATC), z)>, AIP, ATC,
-               <'IAD', 'TC'>), 
+           MAC(f(~MK, ATC),
+               <<PDOL, CDOL1, 'ARC', MAC_arpc(f(~MK, ATC), z)>, AIP, ATC, 'IAD', 'TC'
+               >), 
            'IAD', 'TC'>
      )
      ]
@@ -1827,54 +1838,59 @@ rule (modulo E) Card_Responds_To_Second_GenerateAC_CDA:
    ),
    !LtkCard( ~PAN, ~privkCard ), !Shk( ~PAN, ~MK ),
    !IssuingBank( ~PAN, $Bank ), Fr( ~nc ),
-   In( <'GENERATE_AC', 'TC', 'CDA', 'ARC', DES3(f(~MK, ATC), (AC⊕p8('ARC')))
-       >
+   In( <'GENERATE_AC', 'TC', 'CDA', 'ARC', 
+        MAC_arpc(f(~MK, ATC), (AC⊕p8('ARC')))>
    )
    ]
   --[
   Running( ~PAN, 'Terminal',
            <'Card', 'Terminal', ~PAN, <'CDA', furtherData>, CVM, 
             <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
-             DES3(f(~MK, ATC), (AC⊕p8('ARC')))>, 
+             MAC_arpc(f(~MK, ATC), (AC⊕p8('ARC')))>, 
             ATC, 
             MAC(f(~MK, ATC),
-                <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
-                 DES3(f(~MK, ATC), (AC⊕p8('ARC')))>,
-                <'CDA', furtherData>, ATC, <'IAD', 'TC'>), 
+                <
+                 <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
+                  MAC_arpc(f(~MK, ATC), (AC⊕p8('ARC')))>, 
+                 <'CDA', furtherData>, ATC, 'IAD', 'TC'>), 
             'IAD', 'TC'>
   ),
   Running( ~PAN, $Bank,
            <'Card', 'Bank', ~PAN, <'CDA', furtherData>, CVM, 
             <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
-             DES3(f(~MK, ATC), (AC⊕p8('ARC')))>, 
+             MAC_arpc(f(~MK, ATC), (AC⊕p8('ARC')))>, 
             ATC, 
             MAC(f(~MK, ATC),
-                <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
-                 DES3(f(~MK, ATC), (AC⊕p8('ARC')))>,
-                <'CDA', furtherData>, ATC, <'IAD', 'TC'>), 
+                <
+                 <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
+                  MAC_arpc(f(~MK, ATC), (AC⊕p8('ARC')))>, 
+                 <'CDA', furtherData>, ATC, 'IAD', 'TC'>), 
             'IAD', 'TC'>
   )
   ]->
    [
    Out( <'TC', ATC, 
          MAC(f(~MK, ATC),
-             <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
-              DES3(f(~MK, ATC), (AC⊕p8('ARC')))>,
-             <'CDA', furtherData>, ATC, <'IAD', 'TC'>), 
+             <
+              <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
+               MAC_arpc(f(~MK, ATC), (AC⊕p8('ARC')))>, 
+              <'CDA', furtherData>, ATC, 'IAD', 'TC'>), 
          <~nc, 
           sign(<'05', ~nc, 'TC', 
                 MAC(f(~MK, ATC),
-                    <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
-                     DES3(f(~MK, ATC), (AC⊕p8('ARC')))>,
-                    <'CDA', furtherData>, ATC, <'IAD', 'TC'>), 
+                    <
+                     <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
+                      MAC_arpc(f(~MK, ATC), (AC⊕p8('ARC')))>, 
+                     <'CDA', furtherData>, ATC, 'IAD', 'TC'>), 
                 h(<
                    <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
-                    DES3(f(~MK, ATC), (AC⊕p8('ARC')))>, 
+                    MAC_arpc(f(~MK, ATC), (AC⊕p8('ARC')))>, 
                    'TC', ATC, 
                    MAC(f(~MK, ATC),
-                       <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
-                        DES3(f(~MK, ATC), (AC⊕p8('ARC')))>,
-                       <'CDA', furtherData>, ATC, <'IAD', 'TC'>), 
+                       <
+                        <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
+                         MAC_arpc(f(~MK, ATC), (AC⊕p8('ARC')))>, 
+                        <'CDA', furtherData>, ATC, 'IAD', 'TC'>), 
                    'IAD', 'TC'>), 
                 UN>,
                ~privkCard)
@@ -1892,52 +1908,57 @@ rule (modulo E) Card_Responds_To_Second_GenerateAC_CDA:
      ),
      !LtkCard( ~PAN, ~privkCard ), !Shk( ~PAN, ~MK ),
      !IssuingBank( ~PAN, $Bank ), Fr( ~nc ),
-     In( <'GENERATE_AC', 'TC', 'CDA', 'ARC', DES3(f(~MK, ATC), z)> )
+     In( <'GENERATE_AC', 'TC', 'CDA', 'ARC', MAC_arpc(f(~MK, ATC), z)> )
      ]
     --[
     Running( ~PAN, 'Terminal',
              <'Card', 'Terminal', ~PAN, <'CDA', furtherData>, CVM, 
               <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
-               DES3(f(~MK, ATC), z)>, 
+               MAC_arpc(f(~MK, ATC), z)>, 
               ATC, 
               MAC(f(~MK, ATC),
-                  <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
-                   DES3(f(~MK, ATC), z)>,
-                  <'CDA', furtherData>, ATC, <'IAD', 'TC'>), 
+                  <
+                   <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
+                    MAC_arpc(f(~MK, ATC), z)>, 
+                   <'CDA', furtherData>, ATC, 'IAD', 'TC'>), 
               'IAD', 'TC'>
     ),
     Running( ~PAN, $Bank,
              <'Card', 'Bank', ~PAN, <'CDA', furtherData>, CVM, 
               <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
-               DES3(f(~MK, ATC), z)>, 
+               MAC_arpc(f(~MK, ATC), z)>, 
               ATC, 
               MAC(f(~MK, ATC),
-                  <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
-                   DES3(f(~MK, ATC), z)>,
-                  <'CDA', furtherData>, ATC, <'IAD', 'TC'>), 
+                  <
+                   <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
+                    MAC_arpc(f(~MK, ATC), z)>, 
+                   <'CDA', furtherData>, ATC, 'IAD', 'TC'>), 
               'IAD', 'TC'>
     )
     ]->
      [
      Out( <'TC', ATC, 
            MAC(f(~MK, ATC),
-               <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
-                DES3(f(~MK, ATC), z)>,
-               <'CDA', furtherData>, ATC, <'IAD', 'TC'>), 
+               <
+                <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
+                 MAC_arpc(f(~MK, ATC), z)>, 
+                <'CDA', furtherData>, ATC, 'IAD', 'TC'>), 
            <~nc, 
             sign(<'05', ~nc, 'TC', 
                   MAC(f(~MK, ATC),
-                      <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
-                       DES3(f(~MK, ATC), z)>,
-                      <'CDA', furtherData>, ATC, <'IAD', 'TC'>), 
+                      <
+                       <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
+                        MAC_arpc(f(~MK, ATC), z)>, 
+                       <'CDA', furtherData>, ATC, 'IAD', 'TC'>), 
                   h(<
                      <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
-                      DES3(f(~MK, ATC), z)>, 
+                      MAC_arpc(f(~MK, ATC), z)>, 
                      'TC', ATC, 
                      MAC(f(~MK, ATC),
-                         <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
-                          DES3(f(~MK, ATC), z)>,
-                         <'CDA', furtherData>, ATC, <'IAD', 'TC'>), 
+                         <
+                          <<amount, country, currency, date, type, UN>, CDOL1, 'ARC', 
+                           MAC_arpc(f(~MK, ATC), z)>, 
+                          <'CDA', furtherData>, ATC, 'IAD', 'TC'>), 
                      'IAD', 'TC'>), 
                   UN>,
                  ~privkCard)
@@ -2124,7 +2145,7 @@ rule (modulo E) Bank_Receives_Second_AC:
    ),
    Recv( $Terminal, $Bank, <channelID, '3'>,
          <~PAN, AIP, CVM, <PDOL, CDOL1, 'ARC', ARPC>, ATC, 
-          MAC(f(~MK, ATC), <PDOL, CDOL1, 'ARC', ARPC>, AIP, ATC, <'IAD', 'TC'>), 
+          MAC(f(~MK, ATC), <<PDOL, CDOL1, 'ARC', ARPC>, AIP, ATC, 'IAD', 'TC'>), 
           'IAD', 'TC'>
    ),
    !Shk( ~PAN, ~MK )
@@ -2133,7 +2154,7 @@ rule (modulo E) Bank_Receives_Second_AC:
    [
    Bank_Checked_SecondAC( $Bank, $Terminal,
                           <~PAN, AIP, CVM, <PDOL, CDOL1, 'ARC', ARPC>, ATC, 
-                           MAC(f(~MK, ATC), <PDOL, CDOL1, 'ARC', ARPC>, AIP, ATC, <'IAD', 'TC'>), 
+                           MAC(f(~MK, ATC), <<PDOL, CDOL1, 'ARC', ARPC>, AIP, ATC, 'IAD', 'TC'>), 
                            'IAD', 'TC'>
    ),
    Send( $Bank, $Terminal, <channelID, '4'>, 'ARC' )
@@ -2150,7 +2171,7 @@ rule (modulo E) Bank_Receives_Second_AC_Failed:
    !Shk( ~PAN, ~MK )
    ]
   --[
-  NEq( MAC(f(~MK, ATC), X, AIP, ATC, IAD), AC ),
+  NEq( MAC(f(~MK, ATC), <X, AIP, ATC, IAD>), AC ),
   BankDeclines( <~PAN, AIP, CVM, X, ATC, AC, IAD> )
   ]->
    [ ]
@@ -2311,8 +2332,9 @@ solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
             solve( Commit( 'Terminal', ~PAN,
                            <'Card', 'Terminal', ~PAN, <'CDA', $furtherData>, 'EncPIN', 
                             <<amount, country, currency, date, type, UN>, CDOL1>, ~ATC, 
-                            MAC(f(~MK, ~ATC), <<amount, country, currency, date, type, UN>, CDOL1>,
-                                <'CDA', $furtherData>, ~ATC, <'IAD', CID>), 
+                            MAC(f(~MK, ~ATC),
+                                <<<amount, country, currency, date, type, UN>, CDOL1>, 
+                                 <'CDA', $furtherData>, ~ATC, 'IAD', CID>), 
                             'IAD', CID>
                    ) @ #j )
               case Terminal_Commits_TC
@@ -2320,8 +2342,8 @@ solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
                                            <~PAN, <'CDA', $furtherData>, 'EncPIN', 
                                             <<amount, country, currency, date, type, UN>, CDOL1>, ~ATC, 
                                             MAC(f(~MK, ~ATC),
-                                                <<amount, country, currency, date, type, UN>, CDOL1>,
-                                                <'CDA', $furtherData>, ~ATC, <'IAD', CID>), 
+                                                <<<amount, country, currency, date, type, UN>, CDOL1>, 
+                                                 <'CDA', $furtherData>, ~ATC, 'IAD', CID>), 
                                             'IAD', CID>,
                                            ~channelID, pubkCard
                      ) ▶₀ #j )
@@ -2338,9 +2360,10 @@ solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
                                         'EncPIN', 'HHMMSS'>, 
                                        ~ATC, 
                                        MAC(f(~MK, ~ATC),
-                                           <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
-                                            'TVR', 'EncPIN', 'HHMMSS'>,
-                                           <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                                           <
+                                            <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
+                                             'TVR', 'EncPIN', 'HHMMSS'>, 
+                                            <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                                        'IAD', 'TC'>
                              ) @ #k )
                         case Card_Responds_To_GenerateAC_CDA
@@ -2361,10 +2384,11 @@ solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
                                               ~ATC, 
                                               MAC(f(~MK, ~ATC),
                                                   <
-                                                   <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
-                                                   >, 
-                                                   'TVR', 'EncPIN', 'HHMMSS'>,
-                                                  <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                                                   <
+                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
+                                                    >, 
+                                                    'TVR', 'EncPIN', 'HHMMSS'>, 
+                                                   <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                                               'IAD', 'TC'>
                                      ) @ #l )
                                 case Bank_Commits_TC
@@ -2377,11 +2401,12 @@ solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
                                                                  ~ATC, 
                                                                  MAC(f(~MK, ~ATC),
                                                                      <
-                                                                      <$amount, 'Switzerland', 'CHF', 
-                                                                       'YYMMDD', 'Purchase', ~UN>, 
-                                                                      'TVR', 'EncPIN', 'HHMMSS'>,
-                                                                     <'CDA', $furtherData>, ~ATC,
-                                                                     <'IAD', 'TC'>), 
+                                                                      <
+                                                                       <$amount, 'Switzerland', 'CHF', 
+                                                                        'YYMMDD', 'Purchase', ~UN>, 
+                                                                       'TVR', 'EncPIN', 'HHMMSS'>, 
+                                                                      <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'
+                                                                     >), 
                                                                  'IAD', 'TC'>,
                                                                 channelID.1, ARPC
                                        ) ▶₀ #l )
@@ -2391,10 +2416,11 @@ solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
                                     solve( !KU( sign(<'05', nc.1, 'TC', 
                                                       MAC(f(~MK, ~ATC),
                                                           <
-                                                           <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                            'Purchase', ~UN>, 
-                                                           'TVR', 'EncPIN', 'HHMMSS'>,
-                                                          <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                                                           <
+                                                            <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                             'Purchase', ~UN>, 
+                                                            'TVR', 'EncPIN', 'HHMMSS'>, 
+                                                           <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                                                       h(<
                                                          <
                                                           <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
@@ -2403,10 +2429,11 @@ solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
                                                          'TC', ~ATC, 
                                                          MAC(f(~MK, ~ATC),
                                                              <
-                                                              <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                               'Purchase', ~UN>, 
-                                                              'TVR', 'EncPIN', 'HHMMSS'>,
-                                                             <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                                                              <
+                                                               <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                                'Purchase', ~UN>, 
+                                                               'TVR', 'EncPIN', 'HHMMSS'>, 
+                                                              <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                                                          'IAD', 'TC'>), 
                                                       ~UN>,
                                                      x)
@@ -2429,11 +2456,12 @@ solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
                                                                        ~ATC, 
                                                                        MAC(f(~MK, ~ATC),
                                                                            <
-                                                                            <$amount, 'Switzerland', 'CHF', 
-                                                                             'YYMMDD', 'Purchase', ~UN>, 
-                                                                            'TVR', 'EncPIN', 'HHMMSS'>,
-                                                                           <'CDA', $furtherData>, ~ATC,
-                                                                           <'IAD', 'TC'>), 
+                                                                            <
+                                                                             <$amount, 'Switzerland', 'CHF', 
+                                                                              'YYMMDD', 'Purchase', ~UN>, 
+                                                                             'TVR', 'EncPIN', 'HHMMSS'>, 
+                                                                            <'CDA', $furtherData>, ~ATC, 
+                                                                            'IAD', 'TC'>), 
                                                                        'IAD', 'TC'>,
                                                                       'Null', channelID.1, ARPC
                                                      ) ▶₀ #vr.27 )
@@ -2445,10 +2473,11 @@ solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
                                                   case Card_Responds_To_ReadRecord_NotDDA
                                                   solve( !KU( MAC(f(~MK, ~ATC),
                                                                   <
-                                                                   <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                                    'Purchase', ~UN>, 
-                                                                   'TVR', 'EncPIN', 'HHMMSS'>,
-                                                                  <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>)
+                                                                   <
+                                                                    <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                                     'Purchase', ~UN>, 
+                                                                    'TVR', 'EncPIN', 'HHMMSS'>, 
+                                                                   <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>)
                                                          ) @ #vk.57 )
                                                     case Card_Responds_To_GenerateAC_CDA
                                                     solve( !KU( pk(~privkBank) ) @ #vk.68 )
@@ -2526,9 +2555,10 @@ solve( Terminal_Received_AC( $Terminal, $Bank, $CA, nc, 'TC',
                                'EncPIN', 'HHMMSS'>, 
                               ~ATC, 
                               MAC(f(~MK, ~ATC),
-                                  <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                   'EncPIN', 'HHMMSS'>,
-                                  <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                                  <
+                                   <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                    'EncPIN', 'HHMMSS'>, 
+                                   <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                               'IAD', 'TC'>
                ) @ #j )
           case Bank_Receives_AC_Failed
@@ -2539,9 +2569,10 @@ solve( Terminal_Received_AC( $Terminal, $Bank, $CA, nc, 'TC',
                           'EncPIN', 'HHMMSS'>, 
                          ~ATC, 
                          MAC(f(~MK, ~ATC),
-                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                              'EncPIN', 'HHMMSS'>,
-                             <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                             <
+                              <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                               'EncPIN', 'HHMMSS'>, 
+                              <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                          'IAD', 'TC'>, 
                         encPIN>
                  ) ▶₀ #j )
@@ -2559,9 +2590,10 @@ solve( Terminal_Received_AC( $Terminal, $Bank, $CA, nc, 'TC',
                             'EncPIN', 'HHMMSS'>, 
                            ~ATC, 
                            MAC(f(~MK, ~ATC),
-                               <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                'EncPIN', 'HHMMSS'>,
-                               <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                               <
+                                <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                 'EncPIN', 'HHMMSS'>, 
+                                <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                            'IAD', 'TC'>
                     ) ▶₀ #j )
         qed
@@ -2584,9 +2616,10 @@ solve( Terminal_Received_AC( $Terminal, $Bank, $CA, nc, 'TC',
                                'EncPIN', 'HHMMSS'>, 
                               ~ATC, 
                               MAC(f(~MK, ~ATC),
-                                  <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                   'EncPIN', 'HHMMSS'>,
-                                  <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                                  <
+                                   <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                    'EncPIN', 'HHMMSS'>, 
+                                   <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                               'IAD', 'TC'>
                ) @ #j )
           case Bank_Receives_AC_Failed
@@ -2597,9 +2630,10 @@ solve( Terminal_Received_AC( $Terminal, $Bank, $CA, nc, 'TC',
                           'EncPIN', 'HHMMSS'>, 
                          ~ATC, 
                          MAC(f(~MK, ~ATC),
-                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                              'EncPIN', 'HHMMSS'>,
-                             <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                             <
+                              <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                               'EncPIN', 'HHMMSS'>, 
+                              <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                          'IAD', 'TC'>, 
                         encPIN>
                  ) ▶₀ #j )
@@ -2617,9 +2651,10 @@ solve( Terminal_Received_AC( $Terminal, $Bank, $CA, nc, 'TC',
                             'EncPIN', 'HHMMSS'>, 
                            ~ATC, 
                            MAC(f(~MK, ~ATC),
-                               <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                'EncPIN', 'HHMMSS'>,
-                               <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                               <
+                                <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                 'EncPIN', 'HHMMSS'>, 
+                                <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                            'IAD', 'TC'>
                     ) ▶₀ #j )
         qed
@@ -2642,9 +2677,10 @@ solve( Terminal_Received_AC( $Terminal, $Bank, $CA, nc, 'TC',
                                'EncPIN', 'HHMMSS'>, 
                               ~ATC, 
                               MAC(f(~MK, ~ATC),
-                                  <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                   'EncPIN', 'HHMMSS'>,
-                                  <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                                  <
+                                   <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                    'EncPIN', 'HHMMSS'>, 
+                                   <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                               'IAD', 'TC'>
                ) @ #j )
           case Bank_Receives_AC_Failed
@@ -2655,9 +2691,10 @@ solve( Terminal_Received_AC( $Terminal, $Bank, $CA, nc, 'TC',
                           'EncPIN', 'HHMMSS'>, 
                          ~ATC, 
                          MAC(f(~MK, ~ATC),
-                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                              'EncPIN', 'HHMMSS'>,
-                             <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                             <
+                              <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                               'EncPIN', 'HHMMSS'>, 
+                              <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                          'IAD', 'TC'>, 
                         encPIN>
                  ) ▶₀ #j )
@@ -2675,9 +2712,10 @@ solve( Terminal_Received_AC( $Terminal, $Bank, $CA, nc, 'TC',
                             'EncPIN', 'HHMMSS'>, 
                            ~ATC, 
                            MAC(f(~MK, ~ATC),
-                               <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                'EncPIN', 'HHMMSS'>,
-                               <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                               <
+                                <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                 'EncPIN', 'HHMMSS'>, 
+                                <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                            'IAD', 'TC'>
                     ) ▶₀ #j )
         qed
@@ -2799,9 +2837,10 @@ solve( Terminal_Received_AC( $Terminal, $Bank, $CA, nc, 'TC',
                                'EncPIN', 'HHMMSS'>, 
                               ~ATC, 
                               MAC(f(~MK, ~ATC),
-                                  <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                   'EncPIN', 'HHMMSS'>,
-                                  <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                                  <
+                                   <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                    'EncPIN', 'HHMMSS'>, 
+                                   <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                               'IAD', 'TC'>
                ) @ #j )
           case Bank_Receives_AC_Failed
@@ -2812,9 +2851,10 @@ solve( Terminal_Received_AC( $Terminal, $Bank, $CA, nc, 'TC',
                           'EncPIN', 'HHMMSS'>, 
                          ~ATC, 
                          MAC(f(~MK, ~ATC),
-                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                              'EncPIN', 'HHMMSS'>,
-                             <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                             <
+                              <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                               'EncPIN', 'HHMMSS'>, 
+                              <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                          'IAD', 'TC'>, 
                         encPIN>
                  ) ▶₀ #j )
@@ -2832,9 +2872,10 @@ solve( Terminal_Received_AC( $Terminal, $Bank, $CA, nc, 'TC',
                             'EncPIN', 'HHMMSS'>, 
                            ~ATC, 
                            MAC(f(~MK, ~ATC),
-                               <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                'EncPIN', 'HHMMSS'>,
-                               <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                               <
+                                <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                 'EncPIN', 'HHMMSS'>, 
+                                <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                            'IAD', 'TC'>
                     ) ▶₀ #j )
         qed
@@ -2857,9 +2898,10 @@ solve( Terminal_Received_AC( $Terminal, $Bank, $CA, nc, 'TC',
                                'EncPIN', 'HHMMSS'>, 
                               ~ATC, 
                               MAC(f(~MK, ~ATC),
-                                  <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                   'EncPIN', 'HHMMSS'>,
-                                  <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                                  <
+                                   <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                    'EncPIN', 'HHMMSS'>, 
+                                   <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                               'IAD', 'TC'>
                ) @ #j )
           case Bank_Receives_AC_Failed
@@ -2870,9 +2912,10 @@ solve( Terminal_Received_AC( $Terminal, $Bank, $CA, nc, 'TC',
                           'EncPIN', 'HHMMSS'>, 
                          ~ATC, 
                          MAC(f(~MK, ~ATC),
-                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                              'EncPIN', 'HHMMSS'>,
-                             <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                             <
+                              <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                               'EncPIN', 'HHMMSS'>, 
+                              <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                          'IAD', 'TC'>, 
                         encPIN>
                  ) ▶₀ #j )
@@ -2890,9 +2933,10 @@ solve( Terminal_Received_AC( $Terminal, $Bank, $CA, nc, 'TC',
                             'EncPIN', 'HHMMSS'>, 
                            ~ATC, 
                            MAC(f(~MK, ~ATC),
-                               <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                'EncPIN', 'HHMMSS'>,
-                               <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                               <
+                                <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                 'EncPIN', 'HHMMSS'>, 
+                                <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                            'IAD', 'TC'>
                     ) ▶₀ #j )
         qed
@@ -2915,9 +2959,10 @@ solve( Terminal_Received_AC( $Terminal, $Bank, $CA, nc, 'TC',
                                'EncPIN', 'HHMMSS'>, 
                               ~ATC, 
                               MAC(f(~MK, ~ATC),
-                                  <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                   'EncPIN', 'HHMMSS'>,
-                                  <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                                  <
+                                   <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                    'EncPIN', 'HHMMSS'>, 
+                                   <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                               'IAD', 'TC'>
                ) @ #j )
           case Bank_Receives_AC_Failed
@@ -2928,9 +2973,10 @@ solve( Terminal_Received_AC( $Terminal, $Bank, $CA, nc, 'TC',
                           'EncPIN', 'HHMMSS'>, 
                          ~ATC, 
                          MAC(f(~MK, ~ATC),
-                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                              'EncPIN', 'HHMMSS'>,
-                             <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                             <
+                              <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                               'EncPIN', 'HHMMSS'>, 
+                              <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                          'IAD', 'TC'>, 
                         encPIN>
                  ) ▶₀ #j )
@@ -2948,9 +2994,10 @@ solve( Terminal_Received_AC( $Terminal, $Bank, $CA, nc, 'TC',
                             'EncPIN', 'HHMMSS'>, 
                            ~ATC, 
                            MAC(f(~MK, ~ATC),
-                               <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                'EncPIN', 'HHMMSS'>,
-                               <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                               <
+                                <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                 'EncPIN', 'HHMMSS'>, 
+                                <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                            'IAD', 'TC'>
                     ) ▶₀ #j )
         qed
@@ -3100,9 +3147,10 @@ next
                                'EncPIN', 'HHMMSS'>, 
                               ~ATC, 
                               MAC(f(~MK, ~ATC),
-                                  <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                   'EncPIN', 'HHMMSS'>,
-                                  <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                                  <
+                                   <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                    'EncPIN', 'HHMMSS'>, 
+                                   <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                               'IAD', 'TC'>
                ) @ #j )
           case Bank_Receives_AC_Failed
@@ -3113,9 +3161,10 @@ next
                           'EncPIN', 'HHMMSS'>, 
                          ~ATC, 
                          MAC(f(~MK, ~ATC),
-                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                              'EncPIN', 'HHMMSS'>,
-                             <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                             <
+                              <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                               'EncPIN', 'HHMMSS'>, 
+                              <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                          'IAD', 'TC'>, 
                         encPIN>
                  ) ▶₀ #j )
@@ -3133,9 +3182,10 @@ next
                             'EncPIN', 'HHMMSS'>, 
                            ~ATC, 
                            MAC(f(~MK, ~ATC),
-                               <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                'EncPIN', 'HHMMSS'>,
-                               <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                               <
+                                <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                 'EncPIN', 'HHMMSS'>, 
+                                <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                            'IAD', 'TC'>
                     ) ▶₀ #j )
         qed
@@ -3158,9 +3208,10 @@ next
                                'EncPIN', 'HHMMSS'>, 
                               ~ATC, 
                               MAC(f(~MK, ~ATC),
-                                  <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                   'EncPIN', 'HHMMSS'>,
-                                  <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                                  <
+                                   <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                    'EncPIN', 'HHMMSS'>, 
+                                   <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                               'IAD', 'TC'>
                ) @ #j )
           case Bank_Receives_AC_Failed
@@ -3171,9 +3222,10 @@ next
                           'EncPIN', 'HHMMSS'>, 
                          ~ATC, 
                          MAC(f(~MK, ~ATC),
-                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                              'EncPIN', 'HHMMSS'>,
-                             <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                             <
+                              <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                               'EncPIN', 'HHMMSS'>, 
+                              <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                          'IAD', 'TC'>, 
                         encPIN>
                  ) ▶₀ #j )
@@ -3191,9 +3243,10 @@ next
                             'EncPIN', 'HHMMSS'>, 
                            ~ATC, 
                            MAC(f(~MK, ~ATC),
-                               <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                'EncPIN', 'HHMMSS'>,
-                               <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                               <
+                                <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                 'EncPIN', 'HHMMSS'>, 
+                                <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                            'IAD', 'TC'>
                     ) ▶₀ #j )
         qed
@@ -3216,9 +3269,10 @@ next
                                'EncPIN', 'HHMMSS'>, 
                               ~ATC, 
                               MAC(f(~MK, ~ATC),
-                                  <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                   'EncPIN', 'HHMMSS'>,
-                                  <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                                  <
+                                   <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                    'EncPIN', 'HHMMSS'>, 
+                                   <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                               'IAD', 'TC'>
                ) @ #j )
           case Bank_Receives_AC_Failed
@@ -3229,9 +3283,10 @@ next
                           'EncPIN', 'HHMMSS'>, 
                          ~ATC, 
                          MAC(f(~MK, ~ATC),
-                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                              'EncPIN', 'HHMMSS'>,
-                             <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                             <
+                              <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                               'EncPIN', 'HHMMSS'>, 
+                              <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                          'IAD', 'TC'>, 
                         encPIN>
                  ) ▶₀ #j )
@@ -3249,9 +3304,10 @@ next
                             'EncPIN', 'HHMMSS'>, 
                            ~ATC, 
                            MAC(f(~MK, ~ATC),
-                               <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                'EncPIN', 'HHMMSS'>,
-                               <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                               <
+                                <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                 'EncPIN', 'HHMMSS'>, 
+                                <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                            'IAD', 'TC'>
                     ) ▶₀ #j )
         qed
@@ -3373,9 +3429,10 @@ next
                                'EncPIN', 'HHMMSS'>, 
                               ~ATC, 
                               MAC(f(~MK, ~ATC),
-                                  <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                   'EncPIN', 'HHMMSS'>,
-                                  <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                                  <
+                                   <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                    'EncPIN', 'HHMMSS'>, 
+                                   <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                               'IAD', 'TC'>
                ) @ #j )
           case Bank_Receives_AC_Failed
@@ -3386,9 +3443,10 @@ next
                           'EncPIN', 'HHMMSS'>, 
                          ~ATC, 
                          MAC(f(~MK, ~ATC),
-                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                              'EncPIN', 'HHMMSS'>,
-                             <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                             <
+                              <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                               'EncPIN', 'HHMMSS'>, 
+                              <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                          'IAD', 'TC'>, 
                         encPIN>
                  ) ▶₀ #j )
@@ -3406,9 +3464,10 @@ next
                             'EncPIN', 'HHMMSS'>, 
                            ~ATC, 
                            MAC(f(~MK, ~ATC),
-                               <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                'EncPIN', 'HHMMSS'>,
-                               <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                               <
+                                <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                 'EncPIN', 'HHMMSS'>, 
+                                <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                            'IAD', 'TC'>
                     ) ▶₀ #j )
         qed
@@ -3431,9 +3490,10 @@ next
                                'EncPIN', 'HHMMSS'>, 
                               ~ATC, 
                               MAC(f(~MK, ~ATC),
-                                  <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                   'EncPIN', 'HHMMSS'>,
-                                  <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                                  <
+                                   <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                    'EncPIN', 'HHMMSS'>, 
+                                   <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                               'IAD', 'TC'>
                ) @ #j )
           case Bank_Receives_AC_Failed
@@ -3444,9 +3504,10 @@ next
                           'EncPIN', 'HHMMSS'>, 
                          ~ATC, 
                          MAC(f(~MK, ~ATC),
-                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                              'EncPIN', 'HHMMSS'>,
-                             <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                             <
+                              <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                               'EncPIN', 'HHMMSS'>, 
+                              <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                          'IAD', 'TC'>, 
                         encPIN>
                  ) ▶₀ #j )
@@ -3464,9 +3525,10 @@ next
                             'EncPIN', 'HHMMSS'>, 
                            ~ATC, 
                            MAC(f(~MK, ~ATC),
-                               <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                'EncPIN', 'HHMMSS'>,
-                               <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                               <
+                                <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                 'EncPIN', 'HHMMSS'>, 
+                                <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                            'IAD', 'TC'>
                     ) ▶₀ #j )
         qed
@@ -3489,9 +3551,10 @@ next
                                'EncPIN', 'HHMMSS'>, 
                               ~ATC, 
                               MAC(f(~MK, ~ATC),
-                                  <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                   'EncPIN', 'HHMMSS'>,
-                                  <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                                  <
+                                   <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                    'EncPIN', 'HHMMSS'>, 
+                                   <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                               'IAD', 'TC'>
                ) @ #j )
           case Bank_Receives_AC_Failed
@@ -3502,9 +3565,10 @@ next
                           'EncPIN', 'HHMMSS'>, 
                          ~ATC, 
                          MAC(f(~MK, ~ATC),
-                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                              'EncPIN', 'HHMMSS'>,
-                             <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                             <
+                              <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                               'EncPIN', 'HHMMSS'>, 
+                              <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                          'IAD', 'TC'>, 
                         encPIN>
                  ) ▶₀ #j )
@@ -3522,9 +3586,10 @@ next
                             'EncPIN', 'HHMMSS'>, 
                            ~ATC, 
                            MAC(f(~MK, ~ATC),
-                               <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                'EncPIN', 'HHMMSS'>,
-                               <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                               <
+                                <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                 'EncPIN', 'HHMMSS'>, 
+                                <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                            'IAD', 'TC'>
                     ) ▶₀ #j )
         qed
@@ -3710,9 +3775,10 @@ solve( Commit( T, P, <r, 'Terminal', t> ) @ #i )
                     solve( !KU( pk(~privkCard) ) @ #vk.47 )
                       case Card_Responds_To_ReadRecord_NotDDA
                       solve( !KU( MAC(f(~MK, ~ATC),
-                                      <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                       'EncPIN', 'HHMMSS'>,
-                                      <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>)
+                                      <
+                                       <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                        'EncPIN', 'HHMMSS'>, 
+                                       <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>)
                              ) @ #vk.33 )
                         case Card_Responds_To_GenerateAC_CDA
                         SOLVED // trace found
@@ -3768,17 +3834,19 @@ solve( Commit( B, P, <r, 'Bank', t> ) @ #i )
       case Bank_Receives_AC_case_1
       solve( !KU( sign(<'05', nc, 'TC', 
                         MAC(f(~MK, ATC),
-                            <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                             'EncPIN', 'HHMMSS'>,
-                            <'CDA', furtherData>, ATC, <'IAD', 'TC'>), 
+                            <
+                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                              'EncPIN', 'HHMMSS'>, 
+                             <'CDA', furtherData>, ATC, 'IAD', 'TC'>), 
                         h(<
                            <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
                             'EncPIN', 'HHMMSS'>, 
                            'TC', ATC, 
                            MAC(f(~MK, ATC),
-                               <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                'EncPIN', 'HHMMSS'>,
-                               <'CDA', furtherData>, ATC, <'IAD', 'TC'>), 
+                               <
+                                <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                 'EncPIN', 'HHMMSS'>, 
+                                <'CDA', furtherData>, ATC, 'IAD', 'TC'>), 
                            'IAD', 'TC'>), 
                         ~UN>,
                        x.1)
@@ -3802,9 +3870,10 @@ solve( Commit( B, P, <r, 'Bank', t> ) @ #i )
                     solve( !KU( ~nc ) @ #vk.39 )
                       case Card_Responds_To_GenerateAC_CDA
                       solve( !KU( MAC(f(~MK, ~ATC),
-                                      <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                       'EncPIN', 'HHMMSS'>,
-                                      <'CDA', $furtherData>, ~ATC, <'IAD', 'TC'>)
+                                      <
+                                       <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                        'EncPIN', 'HHMMSS'>, 
+                                       <'CDA', $furtherData>, ~ATC, 'IAD', 'TC'>)
                              ) @ #vk.41 )
                         case Card_Responds_To_GenerateAC_CDA
                         solve( !KU( pk(~privkBank) ) @ #vk.54 )
@@ -3965,7 +4034,7 @@ summary of summaries:
 analyzed: models-n-proofs/contact/Contact_CDA_EncPIN_Offline.spthy
 
   output:          models-n-proofs/contact/Contact_CDA_EncPIN_Offline.proof
-  processing time: 838.135001093s
+  processing time: 677.057091678s
   ARPC_source (all-traces): verified (22 steps)
   executable (exists-trace): verified (30 steps)
   bank_accepts (all-traces): verified (220 steps)

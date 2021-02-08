@@ -2,13 +2,12 @@ theory Visa_EMV_Low begin
 
 // Function signature and definition of the equational theory E
 
-builtins: multiset, xor
-functions: DES3/2, MAC/5, NEq/2, adec/2, aenc/2, f/2, fst/1, h/1, p8/1,
-           pair/2, pk/1, sdec/2, senc/2, sign/2, snd/1, true/0, verify/3
+builtins: xor
+functions: MAC/2, MAC_arpc/2, NEq/2, adec/2, aenc/2, f/2, fst/1, h/1,
+           p8/1, pair/2, pk/1, sign/2, snd/1, true/0, verify/3
 equations:
     adec(aenc(x.1, pk(x.2)), x.2) = x.1,
     fst(<x.1, x.2>) = x.1,
-    sdec(senc(x.1, x.2), x.2) = x.1,
     snd(<x.1, x.2>) = x.2,
     verify(sign(x.1, x.2), x.1, pk(x.2)) = true
 
@@ -1066,18 +1065,18 @@ rule (modulo E) Card_Responds_To_GenerateAC_NoCDA:
   --[
   Running( ~PAN, 'Terminal',
            <'Card', 'Terminal', ~PAN, AIP, CVM, <PDOL, 'TVR', CVM, 'HHMMSS'>, ATC, 
-            MAC(f(~MK, ATC), <PDOL, 'TVR', CVM, 'HHMMSS'>, AIP, ATC, <'IAD', CID>), 
+            MAC(f(~MK, ATC), <<PDOL, 'TVR', CVM, 'HHMMSS'>, AIP, ATC, 'IAD', CID>), 
             'IAD', CID>
   ),
   Running( ~PAN, $Bank,
            <'Card', 'Bank', ~PAN, AIP, CVM, <PDOL, 'TVR', CVM, 'HHMMSS'>, ATC, 
-            MAC(f(~MK, ATC), <PDOL, 'TVR', CVM, 'HHMMSS'>, AIP, ATC, <'IAD', CID>), 
+            MAC(f(~MK, ATC), <<PDOL, 'TVR', CVM, 'HHMMSS'>, AIP, ATC, 'IAD', CID>), 
             'IAD', CID>
   )
   ]->
    [
    Out( <CID, ATC, 
-         MAC(f(~MK, ATC), <PDOL, 'TVR', CVM, 'HHMMSS'>, AIP, ATC, <'IAD', CID>), 
+         MAC(f(~MK, ATC), <<PDOL, 'TVR', CVM, 'HHMMSS'>, AIP, ATC, 'IAD', CID>), 
          'IAD', CID>
    )
    ]
@@ -1099,8 +1098,8 @@ rule (modulo E) Card_Responds_To_GenerateAC_CDA:
             <<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>, 
             ATC, 
             MAC(f(~MK, ATC),
-                <<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>,
-                <'CDA', furtherData>, ATC, <'IAD', CID>), 
+                <<<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>, 
+                 <'CDA', furtherData>, ATC, 'IAD', CID>), 
             'IAD', CID>
   ),
   Running( ~PAN, $Bank,
@@ -1108,26 +1107,26 @@ rule (modulo E) Card_Responds_To_GenerateAC_CDA:
             <<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>, 
             ATC, 
             MAC(f(~MK, ATC),
-                <<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>,
-                <'CDA', furtherData>, ATC, <'IAD', CID>), 
+                <<<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>, 
+                 <'CDA', furtherData>, ATC, 'IAD', CID>), 
             'IAD', CID>
   )
   ]->
    [
    Out( <CID, ATC, 
          MAC(f(~MK, ATC),
-             <<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>,
-             <'CDA', furtherData>, ATC, <'IAD', CID>), 
+             <<<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>, 
+              <'CDA', furtherData>, ATC, 'IAD', CID>), 
          <~nc, 
           sign(<'05', ~nc, CID, 
                 MAC(f(~MK, ATC),
-                    <<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>,
-                    <'CDA', furtherData>, ATC, <'IAD', CID>), 
+                    <<<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>, 
+                     <'CDA', furtherData>, ATC, 'IAD', CID>), 
                 h(<<<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>, 
                    CID, ATC, 
                    MAC(f(~MK, ATC),
-                       <<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>,
-                       <'CDA', furtherData>, ATC, <'IAD', CID>), 
+                       <<<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>, 
+                        <'CDA', furtherData>, ATC, 'IAD', CID>), 
                    'IAD', CID>), 
                 UN>,
                ~privkCard)
@@ -1287,7 +1286,7 @@ rule (modulo E) Terminal_Receives_AC_CDA:
 rule (modulo E) Bank_Receives_AC:
    [
    Recv( $Terminal, $Bank, <channelID, 'Mastercard', '1'>,
-         <<~PAN, AIP, CVM, X, ATC, MAC(f(~MK, ATC), X, AIP, ATC, IAD), IAD>, 
+         <<~PAN, AIP, CVM, X, ATC, MAC(f(~MK, ATC), <X, AIP, ATC, IAD>), IAD>, 
           encPIN>
    ),
    !Shk( ~PAN, ~MK ), !IssuingBank( ~PAN, $Bank )
@@ -1295,9 +1294,9 @@ rule (modulo E) Bank_Receives_AC:
   --[ Once( <~PAN, ATC, 'Bank'> ) ]->
    [
    Bank_Checked_AC( $Bank, $Terminal,
-                    <~PAN, AIP, CVM, X, ATC, MAC(f(~MK, ATC), X, AIP, ATC, IAD), IAD>,
+                    <~PAN, AIP, CVM, X, ATC, MAC(f(~MK, ATC), <X, AIP, ATC, IAD>), IAD>,
                     encPIN, channelID,
-                    DES3(f(~MK, ATC), (MAC(f(~MK, ATC), X, AIP, ATC, IAD)⊕p8('ARC')))
+                    MAC_arpc(f(~MK, ATC), (MAC(f(~MK, ATC), <X, AIP, ATC, IAD>)⊕p8('ARC')))
    )
    ]
 
@@ -1311,7 +1310,7 @@ rule (modulo E) Bank_Receives_AC_Failed:
    !Shk( ~PAN, ~MK )
    ]
   --[
-  NEq( MAC(f(~MK, ATC), X, AIP, ATC, IAD), AC ),
+  NEq( MAC(f(~MK, ATC), <X, AIP, ATC, IAD>), AC ),
   BankDeclines( <~PAN, AIP, CVM, X, ATC, AC, IAD> )
   ]->
    [ ]
@@ -1428,31 +1427,31 @@ rule (modulo E) Card_Responds_To_GPO_EMV_Visa:
            <'Card', 'Terminal', ~PAN, <'EMV', $furtherData>, CVM, 
             <<acType, CVM>, amount, country, currency, date, type, UN>, ATC, 
             MAC(f(~MK, ATC),
-                <<acType, CVM>, amount, country, currency, date, type, UN>,
-                <'EMV', $furtherData>, ATC, <'IAD', 'ARQC'>), 
+                <<<acType, CVM>, amount, country, currency, date, type, UN>, 
+                 <'EMV', $furtherData>, ATC, 'IAD', 'ARQC'>), 
             'IAD', 'ARQC'>
   ),
   Running( ~PAN, $Bank,
            <'Card', 'Bank', ~PAN, <'EMV', $furtherData>, CVM, 
             <<acType, CVM>, amount, country, currency, date, type, UN>, ATC, 
             MAC(f(~MK, ATC),
-                <<acType, CVM>, amount, country, currency, date, type, UN>,
-                <'EMV', $furtherData>, ATC, <'IAD', 'ARQC'>), 
+                <<<acType, CVM>, amount, country, currency, date, type, UN>, 
+                 <'EMV', $furtherData>, ATC, 'IAD', 'ARQC'>), 
             'IAD', 'ARQC'>
   )
   ]->
    [
    Out( <<'EMV', $furtherData>, 'AFL', <~PAN, ~expDate>, <'IAD', 'ARQC'>, 
          MAC(f(~MK, ATC),
-             <<acType, CVM>, amount, country, currency, date, type, UN>,
-             <'EMV', $furtherData>, ATC, <'IAD', 'ARQC'>), 
+             <<<acType, CVM>, amount, country, currency, date, type, UN>, 
+              <'EMV', $furtherData>, ATC, 'IAD', 'ARQC'>), 
          'ARQC', ATC, CVM>
    ),
    Card_Responded_To_GPO_Visa( ~PAN, <'EMV', $furtherData>,
                                <<acType, CVM>, amount, country, currency, date, type, UN>, ATC,
                                MAC(f(~MK, ATC),
-                                   <<acType, CVM>, amount, country, currency, date, type, UN>,
-                                   <'EMV', $furtherData>, ATC, <'IAD', 'ARQC'>),
+                                   <<<acType, CVM>, amount, country, currency, date, type, UN>, 
+                                    <'EMV', $furtherData>, ATC, 'IAD', 'ARQC'>),
                                'ARQC', CVM, <'IAD', 'ARQC'>
    )
    ]
@@ -1470,14 +1469,16 @@ rule (modulo E) Card_Responds_To_GPO_DDA_Visa:
   --[ OneCard( ), Once( <~PAN, ATC, 'Card'> ), NEq( CVM, 'CDCVM' ) ]->
    [
    Out( <<'DDA', $furtherData>, 'AFL', <~PAN, ~expDate>, <'IAD', CID>, 
-         MAC(f(~MK, ATC), <<CID, CVM>, amount, country, currency, date, type, UN>,
-             <'DDA', $furtherData>, ATC, <'IAD', CID>), 
+         MAC(f(~MK, ATC),
+             <<<CID, CVM>, amount, country, currency, date, type, UN>, 
+              <'DDA', $furtherData>, ATC, 'IAD', CID>), 
          CID, ATC, CVM>
    ),
    Card_Responded_To_GPO_Visa( ~PAN, <'DDA', $furtherData>,
                                <<CID, CVM>, amount, country, currency, date, type, UN>, ATC,
-                               MAC(f(~MK, ATC), <<CID, CVM>, amount, country, currency, date, type, UN>,
-                                   <'DDA', $furtherData>, ATC, <'IAD', CID>),
+                               MAC(f(~MK, ATC),
+                                   <<<CID, CVM>, amount, country, currency, date, type, UN>, 
+                                    <'DDA', $furtherData>, ATC, 'IAD', CID>),
                                CID, CVM, <'IAD', CID>
    )
    ]
@@ -2220,7 +2221,8 @@ rule (modulo E) Bank_Receives_AC_Visa:
    [
    Recv( $Terminal, $Bank, <channelID, 'Visa', '1'>,
          <
-          <~PAN, AIP, CVM, PDOL, ATC, MAC(f(~MK, ATC), PDOL, AIP, ATC, IAD), IAD>, 
+          <~PAN, AIP, CVM, PDOL, ATC, MAC(f(~MK, ATC), <PDOL, AIP, ATC, IAD>), IAD
+          >, 
           encPIN>
    ),
    !Shk( ~PAN, ~MK ), !IssuingBank( ~PAN, $Bank )
@@ -2228,9 +2230,11 @@ rule (modulo E) Bank_Receives_AC_Visa:
   --[ Once( <~PAN, ATC, 'Bank'> ) ]->
    [
    Bank_Checked_AC_Visa( $Bank, $Terminal,
-                         <~PAN, AIP, CVM, PDOL, ATC, MAC(f(~MK, ATC), PDOL, AIP, ATC, IAD), IAD>,
+                         <~PAN, AIP, CVM, PDOL, ATC, MAC(f(~MK, ATC), <PDOL, AIP, ATC, IAD>), IAD
+                         >,
                          encPIN, channelID,
-                         DES3(f(~MK, ATC), (MAC(f(~MK, ATC), PDOL, AIP, ATC, IAD)⊕p8('ARC')))
+                         MAC_arpc(f(~MK, ATC),
+                                  (MAC(f(~MK, ATC), <PDOL, AIP, ATC, IAD>)⊕p8('ARC')))
    )
    ]
 
@@ -2245,7 +2249,7 @@ rule (modulo E) Bank_Receives_AC_Failed_Visa:
    !Shk( ~PAN, ~MK )
    ]
   --[
-  NEq( MAC(f(~MK, ATC), PDOL, AIP, ATC, IAD), AC ),
+  NEq( MAC(f(~MK, ATC), <PDOL, AIP, ATC, IAD>), AC ),
   BankDeclines( <~PAN, AIP, CVM, PDOL, ATC, AC, IAD> )
   ]->
    [ ]
@@ -2417,8 +2421,8 @@ solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
                            <'Card', 'Terminal', ~PAN, <'EMV', $furtherData>, CVM, 
                             <<acType, CVM>, amount, country, currency, date, type, UN>, ~ATC, 
                             MAC(f(~MK, ~ATC),
-                                <<acType, CVM>, amount, country, currency, date, type, UN>,
-                                <'EMV', $furtherData>, ~ATC, <'IAD', 'ARQC'>), 
+                                <<<acType, CVM>, amount, country, currency, date, type, UN>, 
+                                 <'EMV', $furtherData>, ~ATC, 'IAD', 'ARQC'>), 
                             'IAD', 'ARQC'>
                    ) @ #j )
               case Terminal_Commits_ARQC_Visa
@@ -2430,9 +2434,10 @@ solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
                                                    >, 
                                                    ~ATC, 
                                                    MAC(f(~MK, ~ATC),
-                                                       <<acType, CVM>, $amount, country, currency, date, 
-                                                        type, ~UN>,
-                                                       <'EMV', $furtherData>, ~ATC, <'IAD', 'ARQC'>), 
+                                                       <
+                                                        <<acType, CVM>, $amount, country, currency, date, 
+                                                         type, ~UN>, 
+                                                        <'EMV', $furtherData>, ~ATC, 'IAD', 'ARQC'>), 
                                                    'IAD', 'ARQC'>,
                                                   ~channelID
                        ) ▶₀ #j )
@@ -2451,8 +2456,8 @@ solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
                                         <~PAN, <'EMV', furtherData.1>, CVM, 
                                          <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
                                          MAC(f(~MK, ATC.1),
-                                             <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                             <'EMV', furtherData.1>, ATC.1, IAD), 
+                                             <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                              <'EMV', furtherData.1>, ATC.1, IAD>), 
                                          IAD>, 
                                         'Null'>
                                  ) ▶₀ #vr.30 )
@@ -2463,9 +2468,10 @@ solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
                                               'Purchase', ~UN>, 
                                              ~ATC, 
                                              MAC(f(~MK, ~ATC),
-                                                 <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                  'Purchase', ~UN>,
-                                                 <'EMV', $furtherData>, ~ATC, <'IAD', 'ARQC'>), 
+                                                 <
+                                                  <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                   'Purchase', ~UN>, 
+                                                  <'EMV', $furtherData>, ~ATC, 'IAD', 'ARQC'>), 
                                              'IAD', 'ARQC'>
                                    ) @ #k )
                               case Card_Responds_To_GPO_EMV_Visa
@@ -2475,9 +2481,10 @@ solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
                                                'Purchase', ~UN>, 
                                               ~ATC, 
                                               MAC(f(~MK, ~ATC),
-                                                  <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                   'Purchase', ~UN>,
-                                                  <'EMV', $furtherData>, ~ATC, <'IAD', 'ARQC'>), 
+                                                  <
+                                                   <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                    'Purchase', ~UN>, 
+                                                   <'EMV', $furtherData>, ~ATC, 'IAD', 'ARQC'>), 
                                               'IAD', 'ARQC'>
                                      ) @ #l )
                                 case Bank_Commits_Visa
@@ -2487,17 +2494,19 @@ solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
                                                             'YYMMDD', 'Purchase', ~UN>, 
                                                            ~ATC, 
                                                            MAC(f(~MK, ~ATC),
-                                                               <<'TC', 'NoPIN'>, $amount, 'Switzerland', 
-                                                                'CHF', 'YYMMDD', 'Purchase', ~UN>,
-                                                               <'EMV', $furtherData>, ~ATC, <'IAD', 'ARQC'>), 
+                                                               <
+                                                                <<'TC', 'NoPIN'>, $amount, 'Switzerland', 
+                                                                 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
+                                                                <'EMV', $furtherData>, ~ATC, 'IAD', 'ARQC'>), 
                                                            'IAD', 'ARQC'>,
                                                           channelID.1, ARPC
                                        ) ▶₀ #l )
                                   case Bank_Processes_CVM_NotOnlinePIN_Visa
                                   solve( !KU( MAC(f(~MK, ~ATC),
-                                                  <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                   'Purchase', ~UN>,
-                                                  <'EMV', $furtherData>, ~ATC, <'IAD', 'ARQC'>)
+                                                  <
+                                                   <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                    'Purchase', ~UN>, 
+                                                   <'EMV', $furtherData>, ~ATC, 'IAD', 'ARQC'>)
                                          ) @ #vk.31 )
                                     case Card_Responds_To_GPO_EMV_Visa
                                     SOLVED // trace found
@@ -2581,8 +2590,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM.1, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -2592,8 +2602,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM.1, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -2603,8 +2614,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM.1, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -2614,8 +2626,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM.1, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -2625,8 +2638,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM.1, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -2672,8 +2686,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM.1, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -2683,8 +2698,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM.1, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -2694,8 +2710,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM.1, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -2705,8 +2722,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM.1, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -2716,8 +2734,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM.1, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -2763,8 +2782,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -2774,8 +2794,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -2785,8 +2806,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -2796,8 +2818,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -2807,8 +2830,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -2854,8 +2878,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -2865,8 +2890,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -2876,8 +2902,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -2887,8 +2914,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -2898,8 +2926,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -2952,8 +2981,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -2963,8 +2993,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -2974,8 +3005,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -2985,8 +3017,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -2996,8 +3029,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3007,8 +3041,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3018,8 +3053,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3065,8 +3101,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3076,8 +3113,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3087,8 +3125,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3098,8 +3137,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3109,8 +3149,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3120,8 +3161,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3131,8 +3173,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3178,8 +3221,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -3189,8 +3233,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -3200,8 +3245,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -3211,8 +3257,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -3222,8 +3269,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -3233,8 +3281,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -3244,8 +3293,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -3291,8 +3341,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -3302,8 +3353,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -3313,8 +3365,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -3324,8 +3377,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -3335,8 +3389,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -3346,8 +3401,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -3357,8 +3413,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -3411,8 +3468,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM.1, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3422,8 +3480,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM.1, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3433,8 +3492,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM.1, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3444,8 +3504,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM.1, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3455,8 +3516,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM.1, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3502,8 +3564,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM.1, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3513,8 +3576,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM.1, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3524,8 +3588,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM.1, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3535,8 +3600,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM.1, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3546,8 +3612,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM.1, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3593,8 +3660,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -3604,8 +3672,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -3615,8 +3684,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -3626,8 +3696,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -3637,8 +3708,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -3684,8 +3756,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -3695,8 +3768,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -3706,8 +3780,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -3717,8 +3792,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -3728,8 +3804,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -3785,8 +3862,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3796,8 +3874,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3807,8 +3886,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3818,8 +3898,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3829,8 +3910,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3840,8 +3922,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3851,8 +3934,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3898,8 +3982,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3909,8 +3994,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3920,8 +4006,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3931,8 +4018,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3942,8 +4030,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3953,8 +4042,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -3964,8 +4054,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, CVM, 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  'Null'>
                           ) ▶₀ #vr.13 )
@@ -4011,8 +4102,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -4022,8 +4114,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -4033,8 +4126,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -4044,8 +4138,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -4055,8 +4150,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -4066,8 +4162,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -4077,8 +4174,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -4124,8 +4222,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -4135,8 +4234,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -4146,8 +4246,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -4157,8 +4258,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -4168,8 +4270,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -4179,8 +4282,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -4190,8 +4294,9 @@ solve( TerminalAccepts( t ) @ #i )
                                 <
                                  <~PAN.1, <'EMV', furtherData.1>, 'OnlinePIN', 
                                   <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                                  MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                                      <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                                  MAC(f(~MK, ATC.1),
+                                      <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                                       <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                                   IAD.1>, 
                                  aenc(~PIN, pk(~privkBank))>
                           ) ▶₀ #vr.13 )
@@ -4265,16 +4370,18 @@ solve( Commit( T, P, <r, 'Terminal', t> ) @ #i )
                        <
                         <~PAN.1, <'EMV', furtherData.1>, CVM, 
                          <TTQ, $amount.1, country, currency, date, type, UN.1>, ATC.1, 
-                         MAC(f(~MK, ATC.1), <TTQ, $amount.1, country, currency, date, type, UN.1>,
-                             <'EMV', furtherData.1>, ATC.1, IAD.1), 
+                         MAC(f(~MK, ATC.1),
+                             <<TTQ, $amount.1, country, currency, date, type, UN.1>, 
+                              <'EMV', furtherData.1>, ATC.1, IAD.1>), 
                          IAD.1>, 
                         'Null'>
                  ) ▶₀ #vr.13 )
             case Terminal_Bank_Network
             solve( !KU( MAC(f(~MK, ATC),
-                            <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
-                             ~UN>,
-                            <'EMV', furtherData>, ATC, IAD)
+                            <
+                             <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
+                              ~UN>, 
+                             <'EMV', furtherData>, ATC, IAD>)
                    ) @ #vk.11 )
               case Card_Responds_To_GPO_EMV_Visa
               solve( !KU( ~UN ) @ #vk.35 )
@@ -4325,8 +4432,9 @@ solve( Commit( B, P, <r, 'Bank', t> ) @ #i )
                      <
                       <~PAN, <'EMV', furtherData>, CVM, 
                        <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                       MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                           <'EMV', furtherData>, ATC, IAD), 
+                       MAC(f(~MK, ATC),
+                           <<TTQ, $amount, country, currency, date, type, UN>, 
+                            <'EMV', furtherData>, ATC, IAD>), 
                        IAD>, 
                       'Null'>
                ) ▶₀ #vr.1 )
@@ -4334,9 +4442,10 @@ solve( Commit( B, P, <r, 'Bank', t> ) @ #i )
           solve( !KU( ~PAN ) @ #vk.3 )
             case Card_Responds_To_GPO_EMV_Visa
             solve( !KU( MAC(f(~MK, ATC),
-                            <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
-                             ~UN>,
-                            <'EMV', furtherData>, ATC, IAD)
+                            <
+                             <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
+                              ~UN>, 
+                             <'EMV', furtherData>, ATC, IAD>)
                    ) @ #vk.11 )
               case Card_Responds_To_GPO_EMV_Visa
               solve( !KU( ~UN ) @ #vk.35 )
@@ -4516,7 +4625,7 @@ summary of summaries:
 analyzed: models-n-proofs/contactless/Visa_EMV_Low.spthy
 
   output:          models-n-proofs/contactless/Visa_EMV_Low.proof
-  processing time: 86.662071061s
+  processing time: 75.441032509s
   executable (exists-trace): verified (20 steps)
   bank_accepts (all-traces): verified (210 steps)
   auth_to_terminal_minimal (all-traces): falsified - found trace (11 steps)

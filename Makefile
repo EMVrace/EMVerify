@@ -1,5 +1,5 @@
-TAMARIN = tamarin-prover#-develop
-#TFLAGS = +RTS -N10 -M20G -RTS
+TAMARIN = tamarin-prover
+TFLAGS = +RTS -N10 -M20G -RTS
 DECOMMENT = tools/decomment
 PREFIXDIR = models-n-proofs
 SEPARATOR = ==============================================================================
@@ -74,7 +74,7 @@ endif
 #the Tamarin command to be executed
 cmd = $(TAMARIN) --prove$(_lemma) $(dir)/$(theory).spthy $(_oracle) $(TFLAGS) --output=$(dir)/$(theory).proof
 
-prove:
+proof:
 	#Create directory for specific models and their proofs
 	mkdir -p $(dir)
 
@@ -110,24 +110,24 @@ endif
 	echo 'Done.'
 
 #for clarity, will use below some redundant variable assignments
-
+####
 contactless:
 	#mastercard:
 	#SDA
-	$(MAKE) auth=SDA CVM=NoPIN value=Low
-	$(MAKE) auth=SDA CVM=NoPIN value=High
-	$(MAKE) auth=SDA CVM=OnlinePIN value=Low
-	$(MAKE) auth=SDA CVM=OnlinePIN value=High
+	$(MAKE) kernel=Mastercard auth=SDA CVM=NoPIN value=Low
+	$(MAKE) kernel=Mastercard auth=SDA CVM=NoPIN value=High
+	$(MAKE) kernel=Mastercard auth=SDA CVM=OnlinePIN value=Low
+	$(MAKE) kernel=Mastercard auth=SDA CVM=OnlinePIN value=High
 	#DDA
-	$(MAKE) auth=DDA CVM=NoPIN value=Low
-	$(MAKE) auth=DDA CVM=NoPIN value=High
-	$(MAKE) auth=DDA CVM=OnlinePIN value=Low
-	$(MAKE) auth=DDA CVM=OnlinePIN value=High
+	$(MAKE) kernel=Mastercard auth=DDA CVM=NoPIN value=Low
+	$(MAKE) kernel=Mastercard auth=DDA CVM=NoPIN value=High
+	$(MAKE) kernel=Mastercard auth=DDA CVM=OnlinePIN value=Low
+	$(MAKE) kernel=Mastercard auth=DDA CVM=OnlinePIN value=High
 	#CDA
-	$(MAKE) auth=CDA CVM=NoPIN value=Low
-	$(MAKE) auth=CDA CVM=NoPIN value=High
-	$(MAKE) auth=CDA CVM=OnlinePIN value=Low
-	$(MAKE) auth=CDA CVM=OnlinePIN value=High
+	$(MAKE) kernel=Mastercard auth=CDA CVM=NoPIN value=Low
+	$(MAKE) kernel=Mastercard auth=CDA CVM=NoPIN value=High
+	$(MAKE) kernel=Mastercard auth=CDA CVM=OnlinePIN value=Low
+	$(MAKE) kernel=Mastercard auth=CDA CVM=OnlinePIN value=High
 	
 	#visa:
 	#EMV mode
@@ -175,9 +175,9 @@ contact:
 	$(MAKE) generic=Contact auth=CDA CVM=EncPIN authz=Online 
 	$(MAKE) generic=Contact auth=CDA CVM=OnlinePIN authz=Online
 
-collect: #collect the results
-	./tools/collect models-n-proofs/contact/ --output=results-contact.html #--lemmas=tools/lemmas.txt --tex-add=tools/tex-add.txt
-	./tools/collect models-n-proofs/contactless/ --output=results-contactless.html #--lemmas=tools/lemmas.txt --tex-add=tools/tex-add.txt
+html: #write results in HTML format
+	./tools/collect models-n-proofs/contact/ #--output=results-contact.html --columns=tools/columns.txt --tex-add=tools/tex-add.txt
+	./tools/collect models-n-proofs/contactless/ #--output=results-contactless.html --columns=tools/columns.txt --tex-add=tools/tex-add.txt
 
 .PHONY: clean
 

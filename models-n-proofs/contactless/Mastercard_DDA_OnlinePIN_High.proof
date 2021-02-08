@@ -2,13 +2,12 @@ theory Mastercard_DDA_OnlinePIN_High begin
 
 // Function signature and definition of the equational theory E
 
-builtins: multiset, xor
-functions: DES3/2, MAC/5, NEq/2, adec/2, aenc/2, f/2, fst/1, h/1, p8/1,
-           pair/2, pk/1, sdec/2, senc/2, sign/2, snd/1, true/0, verify/3
+builtins: xor
+functions: MAC/2, MAC_arpc/2, NEq/2, adec/2, aenc/2, f/2, fst/1, h/1,
+           p8/1, pair/2, pk/1, sign/2, snd/1, true/0, verify/3
 equations:
     adec(aenc(x.1, pk(x.2)), x.2) = x.1,
     fst(<x.1, x.2>) = x.1,
-    sdec(senc(x.1, x.2), x.2) = x.1,
     snd(<x.1, x.2>) = x.2,
     verify(sign(x.1, x.2), x.1, pk(x.2)) = true
 
@@ -1066,18 +1065,18 @@ rule (modulo E) Card_Responds_To_GenerateAC_NoCDA:
   --[
   Running( ~PAN, 'Terminal',
            <'Card', 'Terminal', ~PAN, AIP, CVM, <PDOL, 'TVR', CVM, 'HHMMSS'>, ATC, 
-            MAC(f(~MK, ATC), <PDOL, 'TVR', CVM, 'HHMMSS'>, AIP, ATC, <'IAD', CID>), 
+            MAC(f(~MK, ATC), <<PDOL, 'TVR', CVM, 'HHMMSS'>, AIP, ATC, 'IAD', CID>), 
             'IAD', CID>
   ),
   Running( ~PAN, $Bank,
            <'Card', 'Bank', ~PAN, AIP, CVM, <PDOL, 'TVR', CVM, 'HHMMSS'>, ATC, 
-            MAC(f(~MK, ATC), <PDOL, 'TVR', CVM, 'HHMMSS'>, AIP, ATC, <'IAD', CID>), 
+            MAC(f(~MK, ATC), <<PDOL, 'TVR', CVM, 'HHMMSS'>, AIP, ATC, 'IAD', CID>), 
             'IAD', CID>
   )
   ]->
    [
    Out( <CID, ATC, 
-         MAC(f(~MK, ATC), <PDOL, 'TVR', CVM, 'HHMMSS'>, AIP, ATC, <'IAD', CID>), 
+         MAC(f(~MK, ATC), <<PDOL, 'TVR', CVM, 'HHMMSS'>, AIP, ATC, 'IAD', CID>), 
          'IAD', CID>
    )
    ]
@@ -1099,8 +1098,8 @@ rule (modulo E) Card_Responds_To_GenerateAC_CDA:
             <<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>, 
             ATC, 
             MAC(f(~MK, ATC),
-                <<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>,
-                <'CDA', furtherData>, ATC, <'IAD', CID>), 
+                <<<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>, 
+                 <'CDA', furtherData>, ATC, 'IAD', CID>), 
             'IAD', CID>
   ),
   Running( ~PAN, $Bank,
@@ -1108,26 +1107,26 @@ rule (modulo E) Card_Responds_To_GenerateAC_CDA:
             <<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>, 
             ATC, 
             MAC(f(~MK, ATC),
-                <<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>,
-                <'CDA', furtherData>, ATC, <'IAD', CID>), 
+                <<<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>, 
+                 <'CDA', furtherData>, ATC, 'IAD', CID>), 
             'IAD', CID>
   )
   ]->
    [
    Out( <CID, ATC, 
          MAC(f(~MK, ATC),
-             <<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>,
-             <'CDA', furtherData>, ATC, <'IAD', CID>), 
+             <<<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>, 
+              <'CDA', furtherData>, ATC, 'IAD', CID>), 
          <~nc, 
           sign(<'05', ~nc, CID, 
                 MAC(f(~MK, ATC),
-                    <<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>,
-                    <'CDA', furtherData>, ATC, <'IAD', CID>), 
+                    <<<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>, 
+                     <'CDA', furtherData>, ATC, 'IAD', CID>), 
                 h(<<<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>, 
                    CID, ATC, 
                    MAC(f(~MK, ATC),
-                       <<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>,
-                       <'CDA', furtherData>, ATC, <'IAD', CID>), 
+                       <<<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>, 
+                        <'CDA', furtherData>, ATC, 'IAD', CID>), 
                    'IAD', CID>), 
                 UN>,
                ~privkCard)
@@ -1310,7 +1309,7 @@ rule (modulo E) Terminal_Commits_TC:
 rule (modulo E) Bank_Receives_AC:
    [
    Recv( $Terminal, $Bank, <channelID, 'Mastercard', '1'>,
-         <<~PAN, AIP, CVM, X, ATC, MAC(f(~MK, ATC), X, AIP, ATC, IAD), IAD>, 
+         <<~PAN, AIP, CVM, X, ATC, MAC(f(~MK, ATC), <X, AIP, ATC, IAD>), IAD>, 
           encPIN>
    ),
    !Shk( ~PAN, ~MK ), !IssuingBank( ~PAN, $Bank )
@@ -1318,9 +1317,9 @@ rule (modulo E) Bank_Receives_AC:
   --[ Once( <~PAN, ATC, 'Bank'> ) ]->
    [
    Bank_Checked_AC( $Bank, $Terminal,
-                    <~PAN, AIP, CVM, X, ATC, MAC(f(~MK, ATC), X, AIP, ATC, IAD), IAD>,
+                    <~PAN, AIP, CVM, X, ATC, MAC(f(~MK, ATC), <X, AIP, ATC, IAD>), IAD>,
                     encPIN, channelID,
-                    DES3(f(~MK, ATC), (MAC(f(~MK, ATC), X, AIP, ATC, IAD)⊕p8('ARC')))
+                    MAC_arpc(f(~MK, ATC), (MAC(f(~MK, ATC), <X, AIP, ATC, IAD>)⊕p8('ARC')))
    )
    ]
 
@@ -1334,7 +1333,7 @@ rule (modulo E) Bank_Receives_AC_Failed:
    !Shk( ~PAN, ~MK )
    ]
   --[
-  NEq( MAC(f(~MK, ATC), X, AIP, ATC, IAD), AC ),
+  NEq( MAC(f(~MK, ATC), <X, AIP, ATC, IAD>), AC ),
   BankDeclines( <~PAN, AIP, CVM, X, ATC, AC, IAD> )
   ]->
    [ ]
@@ -1506,31 +1505,31 @@ rule (modulo E) Card_Responds_To_GPO_EMV_Visa:
            <'Card', 'Terminal', ~PAN, <'EMV', $furtherData>, CVM, 
             <<acType, CVM>, amount, country, currency, date, type, UN>, ATC, 
             MAC(f(~MK, ATC),
-                <<acType, CVM>, amount, country, currency, date, type, UN>,
-                <'EMV', $furtherData>, ATC, <'IAD', 'ARQC'>), 
+                <<<acType, CVM>, amount, country, currency, date, type, UN>, 
+                 <'EMV', $furtherData>, ATC, 'IAD', 'ARQC'>), 
             'IAD', 'ARQC'>
   ),
   Running( ~PAN, $Bank,
            <'Card', 'Bank', ~PAN, <'EMV', $furtherData>, CVM, 
             <<acType, CVM>, amount, country, currency, date, type, UN>, ATC, 
             MAC(f(~MK, ATC),
-                <<acType, CVM>, amount, country, currency, date, type, UN>,
-                <'EMV', $furtherData>, ATC, <'IAD', 'ARQC'>), 
+                <<<acType, CVM>, amount, country, currency, date, type, UN>, 
+                 <'EMV', $furtherData>, ATC, 'IAD', 'ARQC'>), 
             'IAD', 'ARQC'>
   )
   ]->
    [
    Out( <<'EMV', $furtherData>, 'AFL', <~PAN, ~expDate>, <'IAD', 'ARQC'>, 
          MAC(f(~MK, ATC),
-             <<acType, CVM>, amount, country, currency, date, type, UN>,
-             <'EMV', $furtherData>, ATC, <'IAD', 'ARQC'>), 
+             <<<acType, CVM>, amount, country, currency, date, type, UN>, 
+              <'EMV', $furtherData>, ATC, 'IAD', 'ARQC'>), 
          'ARQC', ATC, CVM>
    ),
    Card_Responded_To_GPO_Visa( ~PAN, <'EMV', $furtherData>,
                                <<acType, CVM>, amount, country, currency, date, type, UN>, ATC,
                                MAC(f(~MK, ATC),
-                                   <<acType, CVM>, amount, country, currency, date, type, UN>,
-                                   <'EMV', $furtherData>, ATC, <'IAD', 'ARQC'>),
+                                   <<<acType, CVM>, amount, country, currency, date, type, UN>, 
+                                    <'EMV', $furtherData>, ATC, 'IAD', 'ARQC'>),
                                'ARQC', CVM, <'IAD', 'ARQC'>
    )
    ]
@@ -1548,14 +1547,16 @@ rule (modulo E) Card_Responds_To_GPO_DDA_Visa:
   --[ OneCard( ), Once( <~PAN, ATC, 'Card'> ), NEq( CVM, 'CDCVM' ) ]->
    [
    Out( <<'DDA', $furtherData>, 'AFL', <~PAN, ~expDate>, <'IAD', CID>, 
-         MAC(f(~MK, ATC), <<CID, CVM>, amount, country, currency, date, type, UN>,
-             <'DDA', $furtherData>, ATC, <'IAD', CID>), 
+         MAC(f(~MK, ATC),
+             <<<CID, CVM>, amount, country, currency, date, type, UN>, 
+              <'DDA', $furtherData>, ATC, 'IAD', CID>), 
          CID, ATC, CVM>
    ),
    Card_Responded_To_GPO_Visa( ~PAN, <'DDA', $furtherData>,
                                <<CID, CVM>, amount, country, currency, date, type, UN>, ATC,
-                               MAC(f(~MK, ATC), <<CID, CVM>, amount, country, currency, date, type, UN>,
-                                   <'DDA', $furtherData>, ATC, <'IAD', CID>),
+                               MAC(f(~MK, ATC),
+                                   <<<CID, CVM>, amount, country, currency, date, type, UN>, 
+                                    <'DDA', $furtherData>, ATC, 'IAD', CID>),
                                CID, CVM, <'IAD', CID>
    )
    ]
@@ -2275,7 +2276,8 @@ rule (modulo E) Bank_Receives_AC_Visa:
    [
    Recv( $Terminal, $Bank, <channelID, 'Visa', '1'>,
          <
-          <~PAN, AIP, CVM, PDOL, ATC, MAC(f(~MK, ATC), PDOL, AIP, ATC, IAD), IAD>, 
+          <~PAN, AIP, CVM, PDOL, ATC, MAC(f(~MK, ATC), <PDOL, AIP, ATC, IAD>), IAD
+          >, 
           encPIN>
    ),
    !Shk( ~PAN, ~MK ), !IssuingBank( ~PAN, $Bank )
@@ -2283,9 +2285,11 @@ rule (modulo E) Bank_Receives_AC_Visa:
   --[ Once( <~PAN, ATC, 'Bank'> ) ]->
    [
    Bank_Checked_AC_Visa( $Bank, $Terminal,
-                         <~PAN, AIP, CVM, PDOL, ATC, MAC(f(~MK, ATC), PDOL, AIP, ATC, IAD), IAD>,
+                         <~PAN, AIP, CVM, PDOL, ATC, MAC(f(~MK, ATC), <PDOL, AIP, ATC, IAD>), IAD
+                         >,
                          encPIN, channelID,
-                         DES3(f(~MK, ATC), (MAC(f(~MK, ATC), PDOL, AIP, ATC, IAD)⊕p8('ARC')))
+                         MAC_arpc(f(~MK, ATC),
+                                  (MAC(f(~MK, ATC), <PDOL, AIP, ATC, IAD>)⊕p8('ARC')))
    )
    ]
 
@@ -2299,7 +2303,7 @@ rule (modulo E) Bank_Receives_AC_Failed_Visa:
    !Shk( ~PAN, ~MK )
    ]
   --[
-  NEq( MAC(f(~MK, ATC), PDOL, AIP, ATC, IAD), AC ),
+  NEq( MAC(f(~MK, ATC), <PDOL, AIP, ATC, IAD>), AC ),
   BankDeclines( <~PAN, AIP, CVM, PDOL, ATC, AC, IAD> )
   ]->
    [ ]
@@ -2416,8 +2420,9 @@ solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
           solve( Commit( 'Terminal', ~PAN,
                          <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, CVM, 
                           <PDOL, 'TVR', CVM, 'HHMMSS'>, ~ATC, 
-                          MAC(f(~MK, ~ATC), <PDOL, 'TVR', CVM, 'HHMMSS'>, <'DDA', $furtherData>,
-                              ~ATC, <'IAD', CID>), 
+                          MAC(f(~MK, ~ATC),
+                              <<PDOL, 'TVR', CVM, 'HHMMSS'>, <'DDA', $furtherData>, ~ATC, 'IAD', CID
+                              >), 
                           'IAD', CID>
                  ) @ #j )
             case Terminal_Commits_ARQC
@@ -2429,9 +2434,10 @@ solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
                                              'HHMMSS'>, 
                                             ~ATC, 
                                             MAC(f(~MK, ~ATC),
-                                                <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
-                                                 'HHMMSS'>,
-                                                <'DDA', $furtherData>, ~ATC, <'IAD', CID>), 
+                                                <
+                                                 <<$amount, country, currency, date, type, ~UN>, 'TVR', CVM, 
+                                                  'HHMMSS'>, 
+                                                 <'DDA', $furtherData>, ~ATC, 'IAD', CID>), 
                                             'IAD', CID>,
                                            'OnlinePIN', ~channelID
                      ) ▶₀ #j )
@@ -2452,9 +2458,10 @@ solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
                                           'OnlinePIN', 'HHMMSS'>, 
                                          ~ATC, 
                                          MAC(f(~MK, ~ATC),
-                                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
-                                              'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                             <'DDA', $furtherData>, ~ATC, <'IAD', CID>), 
+                                             <
+                                              <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
+                                               'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                              <'DDA', $furtherData>, ~ATC, 'IAD', CID>), 
                                          'IAD', CID>
                                ) @ #k )
                           case Card_Responds_To_GenerateAC_NoCDA
@@ -2475,10 +2482,11 @@ solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
                                                 ~ATC, 
                                                 MAC(f(~MK, ~ATC),
                                                     <
-                                                     <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN
-                                                     >, 
-                                                     'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                                    <'DDA', $furtherData>, ~ATC, <'IAD', CID>), 
+                                                     <
+                                                      <$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
+                                                       ~UN>, 
+                                                      'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                                     <'DDA', $furtherData>, ~ATC, 'IAD', CID>), 
                                                 'IAD', CID>
                                        ) @ #l )
                                   case Bank_Commits
@@ -2491,10 +2499,11 @@ solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
                                                         ~ATC, 
                                                         MAC(f(~MK, ~ATC),
                                                             <
-                                                             <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                              'Purchase', ~UN>, 
-                                                             'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                                            <'DDA', $furtherData>, ~ATC, <'IAD', CID>), 
+                                                             <
+                                                              <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                               'Purchase', ~UN>, 
+                                                              'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                                             <'DDA', $furtherData>, ~ATC, 'IAD', CID>), 
                                                         'IAD', CID>,
                                                        channelID.1, ARPC.1
                                          ) ▶₀ #l )
@@ -2536,12 +2545,14 @@ solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
                                                                            ~ATC, 
                                                                            MAC(f(~MK, ~ATC),
                                                                                <
-                                                                                <$amount, 'Switzerland', 
-                                                                                 'CHF', 'YYMMDD', 'Purchase', 
-                                                                                 ~UN>, 
-                                                                                'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                                                               <'DDA', $furtherData>, ~ATC,
-                                                                               <'IAD', CID>), 
+                                                                                <
+                                                                                 <$amount, 'Switzerland', 
+                                                                                  'CHF', 'YYMMDD', 
+                                                                                  'Purchase', ~UN>, 
+                                                                                 'TVR', 'OnlinePIN', 'HHMMSS'
+                                                                                >, 
+                                                                                <'DDA', $furtherData>, ~ATC, 
+                                                                                'IAD', CID>), 
                                                                            'IAD', CID>,
                                                                           aenc(~PIN, pk(~privkBank)),
                                                                           channelID.1, ARPC
@@ -2549,10 +2560,11 @@ solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
                                                     case Bank_Receives_AC
                                                     solve( !KU( MAC(f(~MK, ~ATC),
                                                                     <
-                                                                     <$amount, 'Switzerland', 'CHF', 
-                                                                      'YYMMDD', 'Purchase', ~UN>, 
-                                                                     'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                                                    <'DDA', $furtherData>, ~ATC, <'IAD', CID>)
+                                                                     <
+                                                                      <$amount, 'Switzerland', 'CHF', 
+                                                                       'YYMMDD', 'Purchase', ~UN>, 
+                                                                      'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                                                     <'DDA', $furtherData>, ~ATC, 'IAD', CID>)
                                                            ) @ #vk.57 )
                                                       case Card_Responds_To_GenerateAC_NoCDA
                                                       solve( !KU( pk(~privkBank) ) @ #vk.66 )
@@ -21563,17 +21575,18 @@ solve( Commit( T, P, <r, 'Terminal', t> ) @ #i )
                      ) ▶₀ #vr.29 )
                 case Bank_Receives_AC
                 solve( !KU( MAC(f(~MK, ATC),
-                                <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                 'OnlinePIN', 'HHMMSS'>,
-                                <'DDA', $furtherData>, ATC, IAD)
+                                <
+                                 <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                  'OnlinePIN', 'HHMMSS'>, 
+                                 <'DDA', $furtherData>, ATC, IAD>)
                        ) @ #vk.15 )
                   case Card_Responds_To_GenerateAC_NoCDA
                   by contradiction /* from formulas */
                 next
                   case c_MAC
-                  solve( !KU( f(~MK, ATC) ) @ #vk.53 )
+                  solve( !KU( f(~MK, ATC) ) @ #vk.55 )
                     case c_f
-                    solve( !KU( ~MK ) @ #vk.67 )
+                    solve( !KU( ~MK ) @ #vk.70 )
                       case Compromise_Bank_Card_ShK
                       by contradiction /* from formulas */
                     qed
@@ -23256,9 +23269,10 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        ) ▶₀ #vr.40 )
                   case Bank_Receives_AC
                   solve( !KU( MAC(f(~MK, ATC),
-                                  <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                   'OnlinePIN', 'HHMMSS'>,
-                                  <'DDA', $furtherData>, ATC, IAD)
+                                  <
+                                   <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                    'OnlinePIN', 'HHMMSS'>, 
+                                   <'DDA', $furtherData>, ATC, IAD>)
                          ) @ #vk.15 )
                     case Card_Responds_To_GenerateAC_NoCDA_case_1
                     by contradiction /* from formulas */
@@ -23267,9 +23281,9 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                     by contradiction /* from formulas */
                   next
                     case c_MAC
-                    solve( !KU( f(~MK, ATC) ) @ #vk.59 )
+                    solve( !KU( f(~MK, ATC) ) @ #vk.61 )
                       case c_f
-                      solve( !KU( ~MK ) @ #vk.73 )
+                      solve( !KU( ~MK ) @ #vk.76 )
                         case Compromise_Bank_Card_ShK
                         by contradiction /* from formulas */
                       qed
@@ -23326,9 +23340,10 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        ) ▶₀ #vr.40 )
                   case Bank_Receives_AC
                   solve( !KU( MAC(f(~MK, ATC),
-                                  <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                   'OnlinePIN', 'HHMMSS'>,
-                                  <'DDA', $furtherData>, ATC, IAD)
+                                  <
+                                   <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                    'OnlinePIN', 'HHMMSS'>, 
+                                   <'DDA', $furtherData>, ATC, IAD>)
                          ) @ #vk.15 )
                     case Card_Responds_To_GenerateAC_NoCDA_case_1
                     by contradiction /* from formulas */
@@ -23337,9 +23352,9 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                     by contradiction /* from formulas */
                   next
                     case c_MAC
-                    solve( !KU( f(~MK, ATC) ) @ #vk.71 )
+                    solve( !KU( f(~MK, ATC) ) @ #vk.73 )
                       case c_f
-                      solve( !KU( ~MK ) @ #vk.85 )
+                      solve( !KU( ~MK ) @ #vk.88 )
                         case Compromise_Bank_Card_ShK
                         by contradiction /* from formulas */
                       qed
@@ -23397,9 +23412,10 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        ) ▶₀ #vr.40 )
                   case Bank_Receives_AC
                   solve( !KU( MAC(f(~MK, ATC),
-                                  <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                   'OnlinePIN', 'HHMMSS'>,
-                                  <'DDA', $furtherData>, ATC, IAD)
+                                  <
+                                   <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                    'OnlinePIN', 'HHMMSS'>, 
+                                   <'DDA', $furtherData>, ATC, IAD>)
                          ) @ #vk.18 )
                     case Card_Responds_To_GenerateAC_NoCDA_case_1
                     by contradiction /* from formulas */
@@ -23408,9 +23424,9 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                     by contradiction /* from formulas */
                   next
                     case c_MAC
-                    solve( !KU( f(~MK, ATC) ) @ #vk.70 )
+                    solve( !KU( f(~MK, ATC) ) @ #vk.72 )
                       case c_f
-                      solve( !KU( ~MK ) @ #vk.84 )
+                      solve( !KU( ~MK ) @ #vk.87 )
                         case Compromise_Bank_Card_ShK
                         by contradiction /* from formulas */
                       qed
@@ -23467,9 +23483,10 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        ) ▶₀ #vr.40 )
                   case Bank_Receives_AC
                   solve( !KU( MAC(f(~MK, ATC),
-                                  <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                   'OnlinePIN', 'HHMMSS'>,
-                                  <'DDA', $furtherData>, ATC, IAD)
+                                  <
+                                   <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                    'OnlinePIN', 'HHMMSS'>, 
+                                   <'DDA', $furtherData>, ATC, IAD>)
                          ) @ #vk.15 )
                     case Card_Responds_To_GenerateAC_NoCDA_case_1
                     by contradiction /* from formulas */
@@ -23478,9 +23495,9 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                     by contradiction /* from formulas */
                   next
                     case c_MAC
-                    solve( !KU( f(~MK, ATC) ) @ #vk.60 )
+                    solve( !KU( f(~MK, ATC) ) @ #vk.62 )
                       case c_f
-                      solve( !KU( ~MK ) @ #vk.74 )
+                      solve( !KU( ~MK ) @ #vk.77 )
                         case Compromise_Bank_Card_ShK
                         by contradiction /* from formulas */
                       qed
@@ -23536,9 +23553,10 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        ) ▶₀ #vr.40 )
                   case Bank_Receives_AC
                   solve( !KU( MAC(f(~MK, ATC),
-                                  <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                   'OnlinePIN', 'HHMMSS'>,
-                                  <'DDA', $furtherData>, ATC, IAD)
+                                  <
+                                   <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                    'OnlinePIN', 'HHMMSS'>, 
+                                   <'DDA', $furtherData>, ATC, IAD>)
                          ) @ #vk.15 )
                     case Card_Responds_To_GenerateAC_NoCDA_case_1
                     by contradiction /* from formulas */
@@ -23547,9 +23565,9 @@ solve( (∀ #j. (Running( P, T, <r, 'Terminal', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                     by contradiction /* from formulas */
                   next
                     case c_MAC
-                    solve( !KU( f(~MK, ATC) ) @ #vk.60 )
+                    solve( !KU( f(~MK, ATC) ) @ #vk.62 )
                       case c_f
-                      solve( !KU( ~MK ) @ #vk.74 )
+                      solve( !KU( ~MK ) @ #vk.77 )
                         case Compromise_Bank_Card_ShK
                         by contradiction /* from formulas */
                       qed
@@ -35079,17 +35097,18 @@ solve( Commit( B, P, <r, 'Bank', t> ) @ #i )
                      ) @ #vk.44 )
                 case Card_Responds_To_ReadRecord_DDA
                 solve( !KU( MAC(f(~MK, ATC),
-                                <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                 'OnlinePIN', 'HHMMSS'>,
-                                <'DDA', $furtherData>, ATC, IAD)
+                                <
+                                 <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                  'OnlinePIN', 'HHMMSS'>, 
+                                 <'DDA', $furtherData>, ATC, IAD>)
                        ) @ #vk.16 )
                   case Card_Responds_To_GenerateAC_NoCDA
                   by contradiction /* from formulas */
                 next
                   case c_MAC
-                  solve( !KU( f(~MK, ATC) ) @ #vk.53 )
+                  solve( !KU( f(~MK, ATC) ) @ #vk.55 )
                     case c_f
-                    solve( !KU( ~MK ) @ #vk.67 )
+                    solve( !KU( ~MK ) @ #vk.70 )
                       case Compromise_Bank_Card_ShK
                       by contradiction /* from formulas */
                     qed
@@ -35706,9 +35725,10 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        ) @ #vk.45 )
                   case Card_Responds_To_ReadRecord_DDA
                   solve( !KU( MAC(f(~MK, ATC),
-                                  <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                   'OnlinePIN', 'HHMMSS'>,
-                                  <'DDA', $furtherData>, ATC, IAD)
+                                  <
+                                   <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                    'OnlinePIN', 'HHMMSS'>, 
+                                   <'DDA', $furtherData>, ATC, IAD>)
                          ) @ #vk.17 )
                     case Card_Responds_To_GenerateAC_NoCDA_case_1
                     by contradiction /* from formulas */
@@ -35717,9 +35737,9 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                     by contradiction /* from formulas */
                   next
                     case c_MAC
-                    solve( !KU( f(~MK, ATC) ) @ #vk.59 )
+                    solve( !KU( f(~MK, ATC) ) @ #vk.61 )
                       case c_f
-                      solve( !KU( ~MK ) @ #vk.73 )
+                      solve( !KU( ~MK ) @ #vk.76 )
                         case Compromise_Bank_Card_ShK
                         by contradiction /* from formulas */
                       qed
@@ -35743,9 +35763,10 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        ) @ #vk.44 )
                   case Card_Responds_To_ReadRecord_DDA
                   solve( !KU( MAC(f(~MK, ATC),
-                                  <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                   'OnlinePIN', 'HHMMSS'>,
-                                  <'DDA', $furtherData>, ATC, IAD)
+                                  <
+                                   <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                    'OnlinePIN', 'HHMMSS'>, 
+                                   <'DDA', $furtherData>, ATC, IAD>)
                          ) @ #vk.16 )
                     case Card_Responds_To_GenerateAC_NoCDA_case_1
                     by contradiction /* from formulas */
@@ -35754,9 +35775,9 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                     by contradiction /* from formulas */
                   next
                     case c_MAC
-                    solve( !KU( f(~MK, ATC) ) @ #vk.71 )
+                    solve( !KU( f(~MK, ATC) ) @ #vk.73 )
                       case c_f
-                      solve( !KU( ~MK ) @ #vk.85 )
+                      solve( !KU( ~MK ) @ #vk.88 )
                         case Compromise_Bank_Card_ShK
                         by contradiction /* from formulas */
                       qed
@@ -35780,9 +35801,10 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        ) @ #vk.44 )
                   case Card_Responds_To_ReadRecord_DDA
                   solve( !KU( MAC(f(~MK, ATC),
-                                  <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                   'OnlinePIN', 'HHMMSS'>,
-                                  <'DDA', $furtherData>, ATC, IAD)
+                                  <
+                                   <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                    'OnlinePIN', 'HHMMSS'>, 
+                                   <'DDA', $furtherData>, ATC, IAD>)
                          ) @ #vk.16 )
                     case Card_Responds_To_GenerateAC_NoCDA_case_1
                     by contradiction /* from formulas */
@@ -35791,9 +35813,9 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                     by contradiction /* from formulas */
                   next
                     case c_MAC
-                    solve( !KU( f(~MK, ATC) ) @ #vk.71 )
+                    solve( !KU( f(~MK, ATC) ) @ #vk.73 )
                       case c_f
-                      solve( !KU( ~MK ) @ #vk.85 )
+                      solve( !KU( ~MK ) @ #vk.88 )
                         case Compromise_Bank_Card_ShK
                         by contradiction /* from formulas */
                       qed
@@ -35817,9 +35839,10 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        ) @ #vk.44 )
                   case Card_Responds_To_ReadRecord_DDA
                   solve( !KU( MAC(f(~MK, ATC),
-                                  <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                   'OnlinePIN', 'HHMMSS'>,
-                                  <'DDA', $furtherData>, ATC, IAD)
+                                  <
+                                   <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                    'OnlinePIN', 'HHMMSS'>, 
+                                   <'DDA', $furtherData>, ATC, IAD>)
                          ) @ #vk.16 )
                     case Card_Responds_To_GenerateAC_NoCDA_case_1
                     by contradiction /* from formulas */
@@ -35828,9 +35851,9 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                     by contradiction /* from formulas */
                   next
                     case c_MAC
-                    solve( !KU( f(~MK, ATC) ) @ #vk.60 )
+                    solve( !KU( f(~MK, ATC) ) @ #vk.62 )
                       case c_f
-                      solve( !KU( ~MK ) @ #vk.74 )
+                      solve( !KU( ~MK ) @ #vk.77 )
                         case Compromise_Bank_Card_ShK
                         by contradiction /* from formulas */
                       qed
@@ -35854,9 +35877,10 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        ) @ #vk.44 )
                   case Card_Responds_To_ReadRecord_DDA
                   solve( !KU( MAC(f(~MK, ATC),
-                                  <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
-                                   'OnlinePIN', 'HHMMSS'>,
-                                  <'DDA', $furtherData>, ATC, IAD)
+                                  <
+                                   <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 'TVR', 
+                                    'OnlinePIN', 'HHMMSS'>, 
+                                   <'DDA', $furtherData>, ATC, IAD>)
                          ) @ #vk.16 )
                     case Card_Responds_To_GenerateAC_NoCDA_case_1
                     by contradiction /* from formulas */
@@ -35865,9 +35889,9 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                     by contradiction /* from formulas */
                   next
                     case c_MAC
-                    solve( !KU( f(~MK, ATC) ) @ #vk.60 )
+                    solve( !KU( f(~MK, ATC) ) @ #vk.62 )
                       case c_f
-                      solve( !KU( ~MK ) @ #vk.74 )
+                      solve( !KU( ~MK ) @ #vk.77 )
                         case Compromise_Bank_Card_ShK
                         by contradiction /* from formulas */
                       qed
@@ -36598,9 +36622,10 @@ next
                                  ) @ #vk.45 )
                             case Card_Responds_To_ReadRecord_DDA
                             solve( !KU( MAC(f(~MK, ATC),
-                                            <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
-                                             'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                            <'DDA', $furtherData>, ATC, IAD)
+                                            <
+                                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
+                                              'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                             <'DDA', $furtherData>, ATC, IAD>)
                                    ) @ #vk.17 )
                               case Card_Responds_To_GenerateAC_NoCDA_case_1
                               by contradiction /* from formulas */
@@ -36615,10 +36640,11 @@ next
                                                        ~ATC, 
                                                        MAC(f(~MK, ~ATC),
                                                            <
-                                                            <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                             'Purchase', ~UN>, 
-                                                            'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                                           <'DDA', $furtherData>, ~ATC, <'IAD', CID>), 
+                                                            <
+                                                             <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                              'Purchase', ~UN>, 
+                                                             'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                                            <'DDA', $furtherData>, ~ATC, 'IAD', CID>), 
                                                        'IAD', CID>,
                                                       aenc(~PIN, pk(~privkBank.1)), channelID.1, ARPC
                                      ) ▶₀ #vr.6 )
@@ -36627,9 +36653,9 @@ next
                               qed
                             next
                               case c_MAC
-                              solve( !KU( f(~MK, ATC) ) @ #vk.59 )
+                              solve( !KU( f(~MK, ATC) ) @ #vk.61 )
                                 case c_f
-                                solve( !KU( ~MK ) @ #vk.73 )
+                                solve( !KU( ~MK ) @ #vk.76 )
                                   case Compromise_Bank_Card_ShK
                                   by contradiction /* from formulas */
                                 qed
@@ -36653,9 +36679,10 @@ next
                                  ) @ #vk.44 )
                             case Card_Responds_To_ReadRecord_DDA
                             solve( !KU( MAC(f(~MK, ATC),
-                                            <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
-                                             'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                            <'DDA', $furtherData>, ATC, IAD)
+                                            <
+                                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
+                                              'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                             <'DDA', $furtherData>, ATC, IAD>)
                                    ) @ #vk.16 )
                               case Card_Responds_To_GenerateAC_NoCDA_case_1
                               by contradiction /* from formulas */
@@ -36670,10 +36697,11 @@ next
                                                        ~ATC, 
                                                        MAC(f(~MK, ~ATC),
                                                            <
-                                                            <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                             'Purchase', ~UN>, 
-                                                            'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                                           <'DDA', $furtherData>, ~ATC, <'IAD', CID>), 
+                                                            <
+                                                             <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                              'Purchase', ~UN>, 
+                                                             'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                                            <'DDA', $furtherData>, ~ATC, 'IAD', CID>), 
                                                        'IAD', CID>,
                                                       aenc(~PIN, pk(~privkBank.1)), channelID.1, ARPC
                                      ) ▶₀ #vr.6 )
@@ -36682,9 +36710,9 @@ next
                               qed
                             next
                               case c_MAC
-                              solve( !KU( f(~MK, ATC) ) @ #vk.71 )
+                              solve( !KU( f(~MK, ATC) ) @ #vk.73 )
                                 case c_f
-                                solve( !KU( ~MK ) @ #vk.85 )
+                                solve( !KU( ~MK ) @ #vk.88 )
                                   case Compromise_Bank_Card_ShK
                                   by contradiction /* from formulas */
                                 qed
@@ -36708,9 +36736,10 @@ next
                                  ) @ #vk.44 )
                             case Card_Responds_To_ReadRecord_DDA
                             solve( !KU( MAC(f(~MK, ATC),
-                                            <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
-                                             'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                            <'DDA', $furtherData>, ATC, IAD)
+                                            <
+                                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
+                                              'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                             <'DDA', $furtherData>, ATC, IAD>)
                                    ) @ #vk.16 )
                               case Card_Responds_To_GenerateAC_NoCDA_case_1
                               by contradiction /* from formulas */
@@ -36725,10 +36754,11 @@ next
                                                        ~ATC, 
                                                        MAC(f(~MK, ~ATC),
                                                            <
-                                                            <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                             'Purchase', ~UN>, 
-                                                            'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                                           <'DDA', $furtherData>, ~ATC, <'IAD', CID>), 
+                                                            <
+                                                             <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                              'Purchase', ~UN>, 
+                                                             'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                                            <'DDA', $furtherData>, ~ATC, 'IAD', CID>), 
                                                        'IAD', CID>,
                                                       aenc(~PIN, pk(~privkBank.1)), channelID.1, ARPC
                                      ) ▶₀ #vr.6 )
@@ -36737,9 +36767,9 @@ next
                               qed
                             next
                               case c_MAC
-                              solve( !KU( f(~MK, ATC) ) @ #vk.71 )
+                              solve( !KU( f(~MK, ATC) ) @ #vk.73 )
                                 case c_f
-                                solve( !KU( ~MK ) @ #vk.85 )
+                                solve( !KU( ~MK ) @ #vk.88 )
                                   case Compromise_Bank_Card_ShK
                                   by contradiction /* from formulas */
                                 qed
@@ -36763,9 +36793,10 @@ next
                                  ) @ #vk.44 )
                             case Card_Responds_To_ReadRecord_DDA
                             solve( !KU( MAC(f(~MK, ATC),
-                                            <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
-                                             'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                            <'DDA', $furtherData>, ATC, IAD)
+                                            <
+                                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
+                                              'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                             <'DDA', $furtherData>, ATC, IAD>)
                                    ) @ #vk.16 )
                               case Card_Responds_To_GenerateAC_NoCDA_case_1
                               by contradiction /* from formulas */
@@ -36780,10 +36811,11 @@ next
                                                        ~ATC, 
                                                        MAC(f(~MK, ~ATC),
                                                            <
-                                                            <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                             'Purchase', ~UN>, 
-                                                            'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                                           <'DDA', $furtherData>, ~ATC, <'IAD', CID>), 
+                                                            <
+                                                             <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                              'Purchase', ~UN>, 
+                                                             'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                                            <'DDA', $furtherData>, ~ATC, 'IAD', CID>), 
                                                        'IAD', CID>,
                                                       aenc(~PIN, pk(~privkBank.1)), channelID.1, ARPC
                                      ) ▶₀ #vr.6 )
@@ -36792,9 +36824,9 @@ next
                               qed
                             next
                               case c_MAC
-                              solve( !KU( f(~MK, ATC) ) @ #vk.60 )
+                              solve( !KU( f(~MK, ATC) ) @ #vk.62 )
                                 case c_f
-                                solve( !KU( ~MK ) @ #vk.74 )
+                                solve( !KU( ~MK ) @ #vk.77 )
                                   case Compromise_Bank_Card_ShK
                                   by contradiction /* from formulas */
                                 qed
@@ -36818,9 +36850,10 @@ next
                                  ) @ #vk.44 )
                             case Card_Responds_To_ReadRecord_DDA
                             solve( !KU( MAC(f(~MK, ATC),
-                                            <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
-                                             'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                            <'DDA', $furtherData>, ATC, IAD)
+                                            <
+                                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
+                                              'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                             <'DDA', $furtherData>, ATC, IAD>)
                                    ) @ #vk.16 )
                               case Card_Responds_To_GenerateAC_NoCDA_case_1
                               by contradiction /* from formulas */
@@ -36835,10 +36868,11 @@ next
                                                        ~ATC, 
                                                        MAC(f(~MK, ~ATC),
                                                            <
-                                                            <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                             'Purchase', ~UN>, 
-                                                            'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                                           <'DDA', $furtherData>, ~ATC, <'IAD', CID>), 
+                                                            <
+                                                             <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                              'Purchase', ~UN>, 
+                                                             'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                                            <'DDA', $furtherData>, ~ATC, 'IAD', CID>), 
                                                        'IAD', CID>,
                                                       aenc(~PIN, pk(~privkBank.1)), channelID.1, ARPC
                                      ) ▶₀ #vr.6 )
@@ -36847,9 +36881,9 @@ next
                               qed
                             next
                               case c_MAC
-                              solve( !KU( f(~MK, ATC) ) @ #vk.60 )
+                              solve( !KU( f(~MK, ATC) ) @ #vk.62 )
                                 case c_f
-                                solve( !KU( ~MK ) @ #vk.74 )
+                                solve( !KU( ~MK ) @ #vk.77 )
                                   case Compromise_Bank_Card_ShK
                                   by contradiction /* from formulas */
                                 qed
@@ -37544,9 +37578,10 @@ next
                                  ) @ #vk.45 )
                             case Card_Responds_To_ReadRecord_DDA
                             solve( !KU( MAC(f(~MK, ATC),
-                                            <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
-                                             'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                            <'DDA', $furtherData>, ATC, IAD)
+                                            <
+                                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
+                                              'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                             <'DDA', $furtherData>, ATC, IAD>)
                                    ) @ #vk.17 )
                               case Card_Responds_To_GenerateAC_NoCDA_case_1
                               by contradiction /* from formulas */
@@ -37561,10 +37596,11 @@ next
                                                        ~ATC, 
                                                        MAC(f(~MK, ~ATC),
                                                            <
-                                                            <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                             'Purchase', ~UN>, 
-                                                            'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                                           <'DDA', $furtherData>, ~ATC, <'IAD', CID>), 
+                                                            <
+                                                             <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                              'Purchase', ~UN>, 
+                                                             'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                                            <'DDA', $furtherData>, ~ATC, 'IAD', CID>), 
                                                        'IAD', CID>,
                                                       aenc(~PIN, pk(~privkBank.1)), channelID.1, ARPC
                                      ) ▶₀ #vr.6 )
@@ -37573,9 +37609,9 @@ next
                               qed
                             next
                               case c_MAC
-                              solve( !KU( f(~MK, ATC) ) @ #vk.59 )
+                              solve( !KU( f(~MK, ATC) ) @ #vk.61 )
                                 case c_f
-                                solve( !KU( ~MK ) @ #vk.73 )
+                                solve( !KU( ~MK ) @ #vk.76 )
                                   case Compromise_Bank_Card_ShK
                                   by contradiction /* from formulas */
                                 qed
@@ -37599,9 +37635,10 @@ next
                                  ) @ #vk.44 )
                             case Card_Responds_To_ReadRecord_DDA
                             solve( !KU( MAC(f(~MK, ATC),
-                                            <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
-                                             'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                            <'DDA', $furtherData>, ATC, IAD)
+                                            <
+                                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
+                                              'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                             <'DDA', $furtherData>, ATC, IAD>)
                                    ) @ #vk.16 )
                               case Card_Responds_To_GenerateAC_NoCDA_case_1
                               by contradiction /* from formulas */
@@ -37616,10 +37653,11 @@ next
                                                        ~ATC, 
                                                        MAC(f(~MK, ~ATC),
                                                            <
-                                                            <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                             'Purchase', ~UN>, 
-                                                            'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                                           <'DDA', $furtherData>, ~ATC, <'IAD', CID>), 
+                                                            <
+                                                             <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                              'Purchase', ~UN>, 
+                                                             'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                                            <'DDA', $furtherData>, ~ATC, 'IAD', CID>), 
                                                        'IAD', CID>,
                                                       aenc(~PIN, pk(~privkBank.1)), channelID.1, ARPC
                                      ) ▶₀ #vr.6 )
@@ -37628,9 +37666,9 @@ next
                               qed
                             next
                               case c_MAC
-                              solve( !KU( f(~MK, ATC) ) @ #vk.71 )
+                              solve( !KU( f(~MK, ATC) ) @ #vk.73 )
                                 case c_f
-                                solve( !KU( ~MK ) @ #vk.85 )
+                                solve( !KU( ~MK ) @ #vk.88 )
                                   case Compromise_Bank_Card_ShK
                                   by contradiction /* from formulas */
                                 qed
@@ -37654,9 +37692,10 @@ next
                                  ) @ #vk.44 )
                             case Card_Responds_To_ReadRecord_DDA
                             solve( !KU( MAC(f(~MK, ATC),
-                                            <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
-                                             'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                            <'DDA', $furtherData>, ATC, IAD)
+                                            <
+                                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
+                                              'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                             <'DDA', $furtherData>, ATC, IAD>)
                                    ) @ #vk.16 )
                               case Card_Responds_To_GenerateAC_NoCDA_case_1
                               by contradiction /* from formulas */
@@ -37671,10 +37710,11 @@ next
                                                        ~ATC, 
                                                        MAC(f(~MK, ~ATC),
                                                            <
-                                                            <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                             'Purchase', ~UN>, 
-                                                            'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                                           <'DDA', $furtherData>, ~ATC, <'IAD', CID>), 
+                                                            <
+                                                             <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                              'Purchase', ~UN>, 
+                                                             'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                                            <'DDA', $furtherData>, ~ATC, 'IAD', CID>), 
                                                        'IAD', CID>,
                                                       aenc(~PIN, pk(~privkBank.1)), channelID.1, ARPC
                                      ) ▶₀ #vr.6 )
@@ -37683,9 +37723,9 @@ next
                               qed
                             next
                               case c_MAC
-                              solve( !KU( f(~MK, ATC) ) @ #vk.71 )
+                              solve( !KU( f(~MK, ATC) ) @ #vk.73 )
                                 case c_f
-                                solve( !KU( ~MK ) @ #vk.85 )
+                                solve( !KU( ~MK ) @ #vk.88 )
                                   case Compromise_Bank_Card_ShK
                                   by contradiction /* from formulas */
                                 qed
@@ -37709,9 +37749,10 @@ next
                                  ) @ #vk.44 )
                             case Card_Responds_To_ReadRecord_DDA
                             solve( !KU( MAC(f(~MK, ATC),
-                                            <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
-                                             'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                            <'DDA', $furtherData>, ATC, IAD)
+                                            <
+                                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
+                                              'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                             <'DDA', $furtherData>, ATC, IAD>)
                                    ) @ #vk.16 )
                               case Card_Responds_To_GenerateAC_NoCDA_case_1
                               by contradiction /* from formulas */
@@ -37726,10 +37767,11 @@ next
                                                        ~ATC, 
                                                        MAC(f(~MK, ~ATC),
                                                            <
-                                                            <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                             'Purchase', ~UN>, 
-                                                            'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                                           <'DDA', $furtherData>, ~ATC, <'IAD', CID>), 
+                                                            <
+                                                             <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                              'Purchase', ~UN>, 
+                                                             'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                                            <'DDA', $furtherData>, ~ATC, 'IAD', CID>), 
                                                        'IAD', CID>,
                                                       aenc(~PIN, pk(~privkBank.1)), channelID.1, ARPC
                                      ) ▶₀ #vr.6 )
@@ -37738,9 +37780,9 @@ next
                               qed
                             next
                               case c_MAC
-                              solve( !KU( f(~MK, ATC) ) @ #vk.60 )
+                              solve( !KU( f(~MK, ATC) ) @ #vk.62 )
                                 case c_f
-                                solve( !KU( ~MK ) @ #vk.74 )
+                                solve( !KU( ~MK ) @ #vk.77 )
                                   case Compromise_Bank_Card_ShK
                                   by contradiction /* from formulas */
                                 qed
@@ -37764,9 +37806,10 @@ next
                                  ) @ #vk.44 )
                             case Card_Responds_To_ReadRecord_DDA
                             solve( !KU( MAC(f(~MK, ATC),
-                                            <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
-                                             'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                            <'DDA', $furtherData>, ATC, IAD)
+                                            <
+                                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
+                                              'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                             <'DDA', $furtherData>, ATC, IAD>)
                                    ) @ #vk.16 )
                               case Card_Responds_To_GenerateAC_NoCDA_case_1
                               by contradiction /* from formulas */
@@ -37781,10 +37824,11 @@ next
                                                        ~ATC, 
                                                        MAC(f(~MK, ~ATC),
                                                            <
-                                                            <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                             'Purchase', ~UN>, 
-                                                            'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                                           <'DDA', $furtherData>, ~ATC, <'IAD', CID>), 
+                                                            <
+                                                             <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                              'Purchase', ~UN>, 
+                                                             'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                                            <'DDA', $furtherData>, ~ATC, 'IAD', CID>), 
                                                        'IAD', CID>,
                                                       aenc(~PIN, pk(~privkBank.1)), channelID.1, ARPC
                                      ) ▶₀ #vr.6 )
@@ -37793,9 +37837,9 @@ next
                               qed
                             next
                               case c_MAC
-                              solve( !KU( f(~MK, ATC) ) @ #vk.60 )
+                              solve( !KU( f(~MK, ATC) ) @ #vk.62 )
                                 case c_f
-                                solve( !KU( ~MK ) @ #vk.74 )
+                                solve( !KU( ~MK ) @ #vk.77 )
                                   case Compromise_Bank_Card_ShK
                                   by contradiction /* from formulas */
                                 qed
@@ -38493,9 +38537,10 @@ next
                                  ) @ #vk.45 )
                             case Card_Responds_To_ReadRecord_DDA
                             solve( !KU( MAC(f(~MK, ATC),
-                                            <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
-                                             'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                            <'DDA', $furtherData>, ATC, IAD)
+                                            <
+                                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
+                                              'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                             <'DDA', $furtherData>, ATC, IAD>)
                                    ) @ #vk.17 )
                               case Card_Responds_To_GenerateAC_NoCDA_case_1
                               by contradiction /* from formulas */
@@ -38510,10 +38555,11 @@ next
                                                        ~ATC, 
                                                        MAC(f(~MK, ~ATC),
                                                            <
-                                                            <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                             'Purchase', ~UN>, 
-                                                            'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                                           <'DDA', $furtherData>, ~ATC, <'IAD', CID>), 
+                                                            <
+                                                             <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                              'Purchase', ~UN>, 
+                                                             'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                                            <'DDA', $furtherData>, ~ATC, 'IAD', CID>), 
                                                        'IAD', CID>,
                                                       aenc(~PIN, pk(~privkBank.1)), channelID.1, ARPC
                                      ) ▶₀ #vr.6 )
@@ -38522,9 +38568,9 @@ next
                               qed
                             next
                               case c_MAC
-                              solve( !KU( f(~MK, ATC) ) @ #vk.59 )
+                              solve( !KU( f(~MK, ATC) ) @ #vk.61 )
                                 case c_f
-                                solve( !KU( ~MK ) @ #vk.73 )
+                                solve( !KU( ~MK ) @ #vk.76 )
                                   case Compromise_Bank_Card_ShK
                                   by contradiction /* from formulas */
                                 qed
@@ -38548,9 +38594,10 @@ next
                                  ) @ #vk.44 )
                             case Card_Responds_To_ReadRecord_DDA
                             solve( !KU( MAC(f(~MK, ATC),
-                                            <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
-                                             'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                            <'DDA', $furtherData>, ATC, IAD)
+                                            <
+                                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
+                                              'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                             <'DDA', $furtherData>, ATC, IAD>)
                                    ) @ #vk.16 )
                               case Card_Responds_To_GenerateAC_NoCDA_case_1
                               by contradiction /* from formulas */
@@ -38565,10 +38612,11 @@ next
                                                        ~ATC, 
                                                        MAC(f(~MK, ~ATC),
                                                            <
-                                                            <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                             'Purchase', ~UN>, 
-                                                            'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                                           <'DDA', $furtherData>, ~ATC, <'IAD', CID>), 
+                                                            <
+                                                             <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                              'Purchase', ~UN>, 
+                                                             'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                                            <'DDA', $furtherData>, ~ATC, 'IAD', CID>), 
                                                        'IAD', CID>,
                                                       aenc(~PIN, pk(~privkBank.1)), channelID.1, ARPC
                                      ) ▶₀ #vr.6 )
@@ -38577,9 +38625,9 @@ next
                               qed
                             next
                               case c_MAC
-                              solve( !KU( f(~MK, ATC) ) @ #vk.71 )
+                              solve( !KU( f(~MK, ATC) ) @ #vk.73 )
                                 case c_f
-                                solve( !KU( ~MK ) @ #vk.85 )
+                                solve( !KU( ~MK ) @ #vk.88 )
                                   case Compromise_Bank_Card_ShK
                                   by contradiction /* from formulas */
                                 qed
@@ -38603,9 +38651,10 @@ next
                                  ) @ #vk.44 )
                             case Card_Responds_To_ReadRecord_DDA
                             solve( !KU( MAC(f(~MK, ATC),
-                                            <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
-                                             'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                            <'DDA', $furtherData>, ATC, IAD)
+                                            <
+                                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
+                                              'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                             <'DDA', $furtherData>, ATC, IAD>)
                                    ) @ #vk.16 )
                               case Card_Responds_To_GenerateAC_NoCDA_case_1
                               by contradiction /* from formulas */
@@ -38620,10 +38669,11 @@ next
                                                        ~ATC, 
                                                        MAC(f(~MK, ~ATC),
                                                            <
-                                                            <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                             'Purchase', ~UN>, 
-                                                            'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                                           <'DDA', $furtherData>, ~ATC, <'IAD', CID>), 
+                                                            <
+                                                             <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                              'Purchase', ~UN>, 
+                                                             'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                                            <'DDA', $furtherData>, ~ATC, 'IAD', CID>), 
                                                        'IAD', CID>,
                                                       aenc(~PIN, pk(~privkBank.1)), channelID.1, ARPC
                                      ) ▶₀ #vr.6 )
@@ -38632,9 +38682,9 @@ next
                               qed
                             next
                               case c_MAC
-                              solve( !KU( f(~MK, ATC) ) @ #vk.71 )
+                              solve( !KU( f(~MK, ATC) ) @ #vk.73 )
                                 case c_f
-                                solve( !KU( ~MK ) @ #vk.85 )
+                                solve( !KU( ~MK ) @ #vk.88 )
                                   case Compromise_Bank_Card_ShK
                                   by contradiction /* from formulas */
                                 qed
@@ -38658,9 +38708,10 @@ next
                                  ) @ #vk.44 )
                             case Card_Responds_To_ReadRecord_DDA
                             solve( !KU( MAC(f(~MK, ATC),
-                                            <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
-                                             'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                            <'DDA', $furtherData>, ATC, IAD)
+                                            <
+                                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
+                                              'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                             <'DDA', $furtherData>, ATC, IAD>)
                                    ) @ #vk.16 )
                               case Card_Responds_To_GenerateAC_NoCDA_case_1
                               by contradiction /* from formulas */
@@ -38675,10 +38726,11 @@ next
                                                        ~ATC, 
                                                        MAC(f(~MK, ~ATC),
                                                            <
-                                                            <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                             'Purchase', ~UN>, 
-                                                            'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                                           <'DDA', $furtherData>, ~ATC, <'IAD', CID>), 
+                                                            <
+                                                             <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                              'Purchase', ~UN>, 
+                                                             'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                                            <'DDA', $furtherData>, ~ATC, 'IAD', CID>), 
                                                        'IAD', CID>,
                                                       aenc(~PIN, pk(~privkBank.1)), channelID.1, ARPC
                                      ) ▶₀ #vr.6 )
@@ -38687,9 +38739,9 @@ next
                               qed
                             next
                               case c_MAC
-                              solve( !KU( f(~MK, ATC) ) @ #vk.60 )
+                              solve( !KU( f(~MK, ATC) ) @ #vk.62 )
                                 case c_f
-                                solve( !KU( ~MK ) @ #vk.74 )
+                                solve( !KU( ~MK ) @ #vk.77 )
                                   case Compromise_Bank_Card_ShK
                                   by contradiction /* from formulas */
                                 qed
@@ -38713,9 +38765,10 @@ next
                                  ) @ #vk.44 )
                             case Card_Responds_To_ReadRecord_DDA
                             solve( !KU( MAC(f(~MK, ATC),
-                                            <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
-                                             'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                            <'DDA', $furtherData>, ATC, IAD)
+                                            <
+                                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
+                                              'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                             <'DDA', $furtherData>, ATC, IAD>)
                                    ) @ #vk.16 )
                               case Card_Responds_To_GenerateAC_NoCDA_case_1
                               by contradiction /* from formulas */
@@ -38730,10 +38783,11 @@ next
                                                        ~ATC, 
                                                        MAC(f(~MK, ~ATC),
                                                            <
-                                                            <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                             'Purchase', ~UN>, 
-                                                            'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                                           <'DDA', $furtherData>, ~ATC, <'IAD', CID>), 
+                                                            <
+                                                             <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                              'Purchase', ~UN>, 
+                                                             'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                                            <'DDA', $furtherData>, ~ATC, 'IAD', CID>), 
                                                        'IAD', CID>,
                                                       aenc(~PIN, pk(~privkBank.1)), channelID.1, ARPC
                                      ) ▶₀ #vr.6 )
@@ -38742,9 +38796,9 @@ next
                               qed
                             next
                               case c_MAC
-                              solve( !KU( f(~MK, ATC) ) @ #vk.60 )
+                              solve( !KU( f(~MK, ATC) ) @ #vk.62 )
                                 case c_f
-                                solve( !KU( ~MK ) @ #vk.74 )
+                                solve( !KU( ~MK ) @ #vk.77 )
                                   case Compromise_Bank_Card_ShK
                                   by contradiction /* from formulas */
                                 qed
@@ -39439,9 +39493,10 @@ next
                                  ) @ #vk.45 )
                             case Card_Responds_To_ReadRecord_DDA
                             solve( !KU( MAC(f(~MK, ATC),
-                                            <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
-                                             'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                            <'DDA', $furtherData>, ATC, IAD)
+                                            <
+                                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
+                                              'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                             <'DDA', $furtherData>, ATC, IAD>)
                                    ) @ #vk.17 )
                               case Card_Responds_To_GenerateAC_NoCDA_case_1
                               by contradiction /* from formulas */
@@ -39456,10 +39511,11 @@ next
                                                        ~ATC, 
                                                        MAC(f(~MK, ~ATC),
                                                            <
-                                                            <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                             'Purchase', ~UN>, 
-                                                            'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                                           <'DDA', $furtherData>, ~ATC, <'IAD', CID>), 
+                                                            <
+                                                             <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                              'Purchase', ~UN>, 
+                                                             'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                                            <'DDA', $furtherData>, ~ATC, 'IAD', CID>), 
                                                        'IAD', CID>,
                                                       aenc(~PIN, pk(~privkBank.1)), channelID.1, ARPC
                                      ) ▶₀ #vr.6 )
@@ -39468,9 +39524,9 @@ next
                               qed
                             next
                               case c_MAC
-                              solve( !KU( f(~MK, ATC) ) @ #vk.59 )
+                              solve( !KU( f(~MK, ATC) ) @ #vk.61 )
                                 case c_f
-                                solve( !KU( ~MK ) @ #vk.73 )
+                                solve( !KU( ~MK ) @ #vk.76 )
                                   case Compromise_Bank_Card_ShK
                                   by contradiction /* from formulas */
                                 qed
@@ -39494,9 +39550,10 @@ next
                                  ) @ #vk.44 )
                             case Card_Responds_To_ReadRecord_DDA
                             solve( !KU( MAC(f(~MK, ATC),
-                                            <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
-                                             'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                            <'DDA', $furtherData>, ATC, IAD)
+                                            <
+                                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
+                                              'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                             <'DDA', $furtherData>, ATC, IAD>)
                                    ) @ #vk.16 )
                               case Card_Responds_To_GenerateAC_NoCDA_case_1
                               by contradiction /* from formulas */
@@ -39511,10 +39568,11 @@ next
                                                        ~ATC, 
                                                        MAC(f(~MK, ~ATC),
                                                            <
-                                                            <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                             'Purchase', ~UN>, 
-                                                            'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                                           <'DDA', $furtherData>, ~ATC, <'IAD', CID>), 
+                                                            <
+                                                             <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                              'Purchase', ~UN>, 
+                                                             'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                                            <'DDA', $furtherData>, ~ATC, 'IAD', CID>), 
                                                        'IAD', CID>,
                                                       aenc(~PIN, pk(~privkBank.1)), channelID.1, ARPC
                                      ) ▶₀ #vr.6 )
@@ -39523,9 +39581,9 @@ next
                               qed
                             next
                               case c_MAC
-                              solve( !KU( f(~MK, ATC) ) @ #vk.71 )
+                              solve( !KU( f(~MK, ATC) ) @ #vk.73 )
                                 case c_f
-                                solve( !KU( ~MK ) @ #vk.85 )
+                                solve( !KU( ~MK ) @ #vk.88 )
                                   case Compromise_Bank_Card_ShK
                                   by contradiction /* from formulas */
                                 qed
@@ -39549,9 +39607,10 @@ next
                                  ) @ #vk.44 )
                             case Card_Responds_To_ReadRecord_DDA
                             solve( !KU( MAC(f(~MK, ATC),
-                                            <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
-                                             'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                            <'DDA', $furtherData>, ATC, IAD)
+                                            <
+                                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
+                                              'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                             <'DDA', $furtherData>, ATC, IAD>)
                                    ) @ #vk.16 )
                               case Card_Responds_To_GenerateAC_NoCDA_case_1
                               by contradiction /* from formulas */
@@ -39566,10 +39625,11 @@ next
                                                        ~ATC, 
                                                        MAC(f(~MK, ~ATC),
                                                            <
-                                                            <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                             'Purchase', ~UN>, 
-                                                            'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                                           <'DDA', $furtherData>, ~ATC, <'IAD', CID>), 
+                                                            <
+                                                             <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                              'Purchase', ~UN>, 
+                                                             'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                                            <'DDA', $furtherData>, ~ATC, 'IAD', CID>), 
                                                        'IAD', CID>,
                                                       aenc(~PIN, pk(~privkBank.1)), channelID.1, ARPC
                                      ) ▶₀ #vr.6 )
@@ -39578,9 +39638,9 @@ next
                               qed
                             next
                               case c_MAC
-                              solve( !KU( f(~MK, ATC) ) @ #vk.71 )
+                              solve( !KU( f(~MK, ATC) ) @ #vk.73 )
                                 case c_f
-                                solve( !KU( ~MK ) @ #vk.85 )
+                                solve( !KU( ~MK ) @ #vk.88 )
                                   case Compromise_Bank_Card_ShK
                                   by contradiction /* from formulas */
                                 qed
@@ -39604,9 +39664,10 @@ next
                                  ) @ #vk.44 )
                             case Card_Responds_To_ReadRecord_DDA
                             solve( !KU( MAC(f(~MK, ATC),
-                                            <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
-                                             'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                            <'DDA', $furtherData>, ATC, IAD)
+                                            <
+                                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
+                                              'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                             <'DDA', $furtherData>, ATC, IAD>)
                                    ) @ #vk.16 )
                               case Card_Responds_To_GenerateAC_NoCDA_case_1
                               by contradiction /* from formulas */
@@ -39621,10 +39682,11 @@ next
                                                        ~ATC, 
                                                        MAC(f(~MK, ~ATC),
                                                            <
-                                                            <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                             'Purchase', ~UN>, 
-                                                            'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                                           <'DDA', $furtherData>, ~ATC, <'IAD', CID>), 
+                                                            <
+                                                             <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                              'Purchase', ~UN>, 
+                                                             'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                                            <'DDA', $furtherData>, ~ATC, 'IAD', CID>), 
                                                        'IAD', CID>,
                                                       aenc(~PIN, pk(~privkBank.1)), channelID.1, ARPC
                                      ) ▶₀ #vr.6 )
@@ -39633,9 +39695,9 @@ next
                               qed
                             next
                               case c_MAC
-                              solve( !KU( f(~MK, ATC) ) @ #vk.60 )
+                              solve( !KU( f(~MK, ATC) ) @ #vk.62 )
                                 case c_f
-                                solve( !KU( ~MK ) @ #vk.74 )
+                                solve( !KU( ~MK ) @ #vk.77 )
                                   case Compromise_Bank_Card_ShK
                                   by contradiction /* from formulas */
                                 qed
@@ -39659,9 +39721,10 @@ next
                                  ) @ #vk.44 )
                             case Card_Responds_To_ReadRecord_DDA
                             solve( !KU( MAC(f(~MK, ATC),
-                                            <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
-                                             'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                            <'DDA', $furtherData>, ATC, IAD)
+                                            <
+                                             <<$amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
+                                              'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                             <'DDA', $furtherData>, ATC, IAD>)
                                    ) @ #vk.16 )
                               case Card_Responds_To_GenerateAC_NoCDA_case_1
                               by contradiction /* from formulas */
@@ -39676,10 +39739,11 @@ next
                                                        ~ATC, 
                                                        MAC(f(~MK, ~ATC),
                                                            <
-                                                            <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                             'Purchase', ~UN>, 
-                                                            'TVR', 'OnlinePIN', 'HHMMSS'>,
-                                                           <'DDA', $furtherData>, ~ATC, <'IAD', CID>), 
+                                                            <
+                                                             <$amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                              'Purchase', ~UN>, 
+                                                             'TVR', 'OnlinePIN', 'HHMMSS'>, 
+                                                            <'DDA', $furtherData>, ~ATC, 'IAD', CID>), 
                                                        'IAD', CID>,
                                                       aenc(~PIN, pk(~privkBank.1)), channelID.1, ARPC
                                      ) ▶₀ #vr.6 )
@@ -39688,9 +39752,9 @@ next
                               qed
                             next
                               case c_MAC
-                              solve( !KU( f(~MK, ATC) ) @ #vk.60 )
+                              solve( !KU( f(~MK, ATC) ) @ #vk.62 )
                                 case c_f
-                                solve( !KU( ~MK ) @ #vk.74 )
+                                solve( !KU( ~MK ) @ #vk.77 )
                                   case Compromise_Bank_Card_ShK
                                   by contradiction /* from formulas */
                                 qed
@@ -40182,7 +40246,7 @@ summary of summaries:
 analyzed: models-n-proofs/contactless/Mastercard_DDA_OnlinePIN_High.spthy
 
   output:          models-n-proofs/contactless/Mastercard_DDA_OnlinePIN_High.proof
-  processing time: 1576.774463532s
+  processing time: 1319.774642161s
   executable (exists-trace): verified (31 steps)
   bank_accepts (all-traces): verified (4865 steps)
   auth_to_terminal_minimal (all-traces): verified (409 steps)

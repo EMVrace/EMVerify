@@ -127,20 +127,20 @@ The following `make` commands run all possible valid target configurations:
 ```shell
 #=============== Mastercard ================
 #SDA
-make generic=Contactless auth=SDA CVM=NoPIN value=Low 
-make generic=Contactless auth=SDA CVM=NoPIN value=High 
-make generic=Contactless auth=SDA CVM=OnlinePIN value=Low 
-make generic=Contactless auth=SDA CVM=OnlinePIN value=High 
+make generic=Contactless kernel=Mastercard auth=SDA CVM=NoPIN value=Low 
+make generic=Contactless kernel=Mastercard auth=SDA CVM=NoPIN value=High 
+make generic=Contactless kernel=Mastercard auth=SDA CVM=OnlinePIN value=Low 
+make generic=Contactless kernel=Mastercard auth=SDA CVM=OnlinePIN value=High 
 #DDA
-make generic=Contactless auth=DDA CVM=NoPIN value=Low 
-make generic=Contactless auth=DDA CVM=NoPIN value=High 
-make generic=Contactless auth=DDA CVM=OnlinePIN value=Low 
-make generic=Contactless auth=DDA CVM=OnlinePIN value=High 
+make generic=Contactless kernel=Mastercard auth=DDA CVM=NoPIN value=Low 
+make generic=Contactless kernel=Mastercard auth=DDA CVM=NoPIN value=High 
+make generic=Contactless kernel=Mastercard auth=DDA CVM=OnlinePIN value=Low 
+make generic=Contactless kernel=Mastercard auth=DDA CVM=OnlinePIN value=High 
 #CDA
-make generic=Contactless auth=CDA CVM=NoPIN value=Low 
-make generic=Contactless auth=CDA CVM=NoPIN value=High 
-make generic=Contactless auth=CDA CVM=OnlinePIN value=Low 
-make generic=Contactless auth=CDA CVM=OnlinePIN value=High 
+make generic=Contactless kernel=Mastercard auth=CDA CVM=NoPIN value=Low 
+make generic=Contactless kernel=Mastercard auth=CDA CVM=NoPIN value=High 
+make generic=Contactless kernel=Mastercard auth=CDA CVM=OnlinePIN value=Low 
+make generic=Contactless kernel=Mastercard auth=CDA CVM=OnlinePIN value=High 
 
 #================ Visa ===================
 #EMV
@@ -215,6 +215,4 @@ make generic=Contactless kernel=Visa auth=DDA value=Low fix=Yes
 
 ## Team
 
-* [David Basin](https://people.inf.ethz.ch/basin/)
-* [Ralf Sasse](https://people.inf.ethz.ch/rsasse/)
-* [Jorge Toro](https://jorgetp.github.io) (maintainer of this repo)
+[David Basin](https://people.inf.ethz.ch/basin/), [Ralf Sasse](https://people.inf.ethz.ch/rsasse/), and [Jorge Toro](https://jorgetp.github.io) (maintainer of this repo)

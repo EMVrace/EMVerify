@@ -1,0 +1,24 @@
+#columns for tables in the paper
+
+No.
+Theory
+#WARNING
+
+executable
+bank_accepts
+
+auth_to_terminal_minimal
+#auth_to_terminal
+auth_to_bank_minimal
+#auth_to_bank
+
+#secrecy_MK
+#secrecy_privkCard
+#secrecy_PIN
+#secrecy_PAN
+
+#Rules
+LoC
+Time
+#Theory file
+#Proof file

@@ -2,10 +2,12 @@ theory Contact_DDA_NoPIN_Offline
 
 begin
 
-builtins:   signing, hashing, multiset, symmetric-encryption,
-            asymmetric-encryption, xor
+builtins:   signing, hashing, asymmetric-encryption, xor
 
-functions:  f/2, DES3/2, NEq/2, MAC/5, p8/1
+functions:  NEq/2,
+            f/2,
+            MAC/2, MAC_arpc/2,
+            p8/1
 
 rule Terminal_Bank_Network:
     [ Send(S, R, channelID, msg) ]-->[ Recv(S, R, channelID, msg) ]
@@ -379,7 +381,7 @@ rule Terminal_Sends_GenerateAC_CDA:
 rule Card_Responds_To_GenerateAC_NoCDA:
     let X = <PDOL, CDOL1>
         IAD = <'IAD', CID>
-        AC = MAC(f(~MK, ATC), X, AIP, ATC, IAD)
+        AC = MAC(f(~MK, ATC), <X, AIP, ATC, IAD>)
         transaction = <~PAN, AIP, CVM, X, ATC, AC, IAD>
     in
     [ Card_Ready_For_Cryptogram(~PAN, PDOL, ATC, CVM),
@@ -398,7 +400,7 @@ rule Card_Responds_To_GenerateAC_CDA:
         X = <PDOL, CDOL1>
         IAD = <'IAD', CID>
         AIP = <'CDA', furtherData>
-        AC = MAC(f(~MK, ATC), X, AIP, ATC, IAD)
+        AC = MAC(f(~MK, ATC), <X, AIP, ATC, IAD>)
         T = h(<X, CID, ATC, AC, IAD>)
         SDAD = sign{'05', ~nc, CID, AC, T, UN}~privkCard
         transaction = <~PAN, AIP, CVM, X, ATC, AC, IAD>
@@ -472,8 +474,8 @@ rule Bank_Receives_AC:
     let PDOL = <amount, country, currency, date, type, UN>
         CDOL1 = <TVR, CVM, time>
         X = <PDOL, CDOL1>
-        AC = MAC(f(~MK, ATC), X, AIP, ATC, IAD)
-        ARPC = DES3(f(~MK, ATC), AC XOR p8('ARC'))
+        AC = MAC(f(~MK, ATC), <X, AIP, ATC, IAD>)
+        ARPC = MAC_arpc(f(~MK, ATC), AC XOR p8('ARC'))
         transaction = <~PAN, AIP, CVM, X, ATC, AC, IAD>
     in
     [ Recv($Terminal, $Bank, <channelID, '1'>, <transaction, encPIN>),
@@ -485,7 +487,7 @@ rule Bank_Receives_AC:
     [ Bank_Checked_AC($Bank, $Terminal, transaction, encPIN, channelID, ARPC) ]
 
 rule Bank_Receives_AC_Failed:
-    let correctAC = MAC(f(~MK, ATC), X, AIP, ATC, IAD)
+    let correctAC = MAC(f(~MK, ATC), <X, AIP, ATC, IAD>)
         transaction = <~PAN, AIP, CVM, X, ATC, AC, IAD>
     in
     [ Recv($Terminal, $Bank, <channelID, '1'>, <transaction, encPIN>),
@@ -567,13 +569,13 @@ rule Terminal_Sends_Second_GenerateAC_CDA:
       Out(<'GENERATE_AC', 'TC', 'CDA', CDOL2>) ]
 
 rule Card_Responds_To_Second_GenerateAC_NoCDA:
-    let ARPC = DES3(f(~MK, ATC), AC XOR p8('ARC'))
+    let ARPC = MAC_arpc(f(~MK, ATC), AC XOR p8('ARC'))
         CDOL2 = <'ARC', ARPC>
         X = <PDOL, CDOL1>
         transaction = <~PAN, AIP, CVM, X, ATC, AC, IAD>
         X2 = <PDOL, CDOL1, CDOL2>
         IAD2 = <'IAD', 'TC'>
-        TC = MAC(f(~MK, ATC), X2, AIP, ATC, IAD2)
+        TC = MAC(f(~MK, ATC), <X2, AIP, ATC, IAD2>)
         transaction2 = <~PAN, AIP, CVM, X2, ATC, TC, IAD2>
     in
     [ Card_Produced_AC(~PAN, nc, 'ARQC', transaction),
@@ -584,7 +586,7 @@ rule Card_Responds_To_Second_GenerateAC_NoCDA:
     [ Out(<'TC', ATC, TC, IAD2>) ]
 
 rule Card_Responds_To_Second_GenerateAC_CDA:
-    let ARPC = DES3(f(~MK, ATC), AC XOR p8('ARC'))
+    let ARPC = MAC_arpc(f(~MK, ATC), AC XOR p8('ARC'))
         CDOL2 = <'ARC', ARPC>
         PDOL = <amount, country, currency, date, type, UN>
         X = <PDOL, CDOL1>
@@ -592,7 +594,7 @@ rule Card_Responds_To_Second_GenerateAC_CDA:
         transaction = <~PAN, AIP, CVM, X, ATC, AC, IAD>
         X2 = <PDOL, CDOL1, CDOL2>
         IAD2 = <'IAD', 'TC'>
-        TC = MAC(f(~MK, ATC), X2, AIP, ATC, IAD2)
+        TC = MAC(f(~MK, ATC), <X2, AIP, ATC, IAD2>)
         T = h(<X2, 'TC', ATC, TC, IAD2>)
         SDAD = sign{'05', ~nc, 'TC', TC, T, UN}~privkCard
         transaction2 = <~PAN, AIP, CVM, X2, ATC, TC, IAD2>
@@ -649,7 +651,7 @@ rule Bank_Receives_Second_AC:
         CDOL2 = <'ARC', ARPC>
         X2 = <PDOL, CDOL1, CDOL2>
         IAD2 = <'IAD', 'TC'>
-        TC = MAC(f(~MK, ATC), X2, AIP, ATC, IAD2)
+        TC = MAC(f(~MK, ATC), <X2, AIP, ATC, IAD2>)
         transaction2 = <~PAN, AIP, CVM, X2, ATC, TC, IAD2>
     in
     [ Bank_Checked_AC_and_CVM($Bank, $Terminal, transaction, channelID, ARPC),
@@ -660,7 +662,7 @@ rule Bank_Receives_Second_AC:
       Send($Bank, $Terminal, <channelID, '4'>, 'ARC') ]
 
 rule Bank_Receives_Second_AC_Failed:
-    let correctAC = MAC(f(~MK, ATC), X, AIP, ATC, IAD)
+    let correctAC = MAC(f(~MK, ATC), <X, AIP, ATC, IAD>)
         transaction = <~PAN, AIP, CVM, X, ATC, AC, IAD>
     in
     [ Recv($Terminal, $Bank, <channelID, '3'>, transaction),

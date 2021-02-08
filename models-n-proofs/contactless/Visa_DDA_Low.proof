@@ -2,13 +2,12 @@ theory Visa_DDA_Low begin
 
 // Function signature and definition of the equational theory E
 
-builtins: multiset, xor
-functions: DES3/2, MAC/5, NEq/2, adec/2, aenc/2, f/2, fst/1, h/1, p8/1,
-           pair/2, pk/1, sdec/2, senc/2, sign/2, snd/1, true/0, verify/3
+builtins: xor
+functions: MAC/2, MAC_arpc/2, NEq/2, adec/2, aenc/2, f/2, fst/1, h/1,
+           p8/1, pair/2, pk/1, sign/2, snd/1, true/0, verify/3
 equations:
     adec(aenc(x.1, pk(x.2)), x.2) = x.1,
     fst(<x.1, x.2>) = x.1,
-    sdec(senc(x.1, x.2), x.2) = x.1,
     snd(<x.1, x.2>) = x.2,
     verify(sign(x.1, x.2), x.1, pk(x.2)) = true
 
@@ -1066,18 +1065,18 @@ rule (modulo E) Card_Responds_To_GenerateAC_NoCDA:
   --[
   Running( ~PAN, 'Terminal',
            <'Card', 'Terminal', ~PAN, AIP, CVM, <PDOL, 'TVR', CVM, 'HHMMSS'>, ATC, 
-            MAC(f(~MK, ATC), <PDOL, 'TVR', CVM, 'HHMMSS'>, AIP, ATC, <'IAD', CID>), 
+            MAC(f(~MK, ATC), <<PDOL, 'TVR', CVM, 'HHMMSS'>, AIP, ATC, 'IAD', CID>), 
             'IAD', CID>
   ),
   Running( ~PAN, $Bank,
            <'Card', 'Bank', ~PAN, AIP, CVM, <PDOL, 'TVR', CVM, 'HHMMSS'>, ATC, 
-            MAC(f(~MK, ATC), <PDOL, 'TVR', CVM, 'HHMMSS'>, AIP, ATC, <'IAD', CID>), 
+            MAC(f(~MK, ATC), <<PDOL, 'TVR', CVM, 'HHMMSS'>, AIP, ATC, 'IAD', CID>), 
             'IAD', CID>
   )
   ]->
    [
    Out( <CID, ATC, 
-         MAC(f(~MK, ATC), <PDOL, 'TVR', CVM, 'HHMMSS'>, AIP, ATC, <'IAD', CID>), 
+         MAC(f(~MK, ATC), <<PDOL, 'TVR', CVM, 'HHMMSS'>, AIP, ATC, 'IAD', CID>), 
          'IAD', CID>
    )
    ]
@@ -1099,8 +1098,8 @@ rule (modulo E) Card_Responds_To_GenerateAC_CDA:
             <<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>, 
             ATC, 
             MAC(f(~MK, ATC),
-                <<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>,
-                <'CDA', furtherData>, ATC, <'IAD', CID>), 
+                <<<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>, 
+                 <'CDA', furtherData>, ATC, 'IAD', CID>), 
             'IAD', CID>
   ),
   Running( ~PAN, $Bank,
@@ -1108,26 +1107,26 @@ rule (modulo E) Card_Responds_To_GenerateAC_CDA:
             <<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>, 
             ATC, 
             MAC(f(~MK, ATC),
-                <<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>,
-                <'CDA', furtherData>, ATC, <'IAD', CID>), 
+                <<<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>, 
+                 <'CDA', furtherData>, ATC, 'IAD', CID>), 
             'IAD', CID>
   )
   ]->
    [
    Out( <CID, ATC, 
          MAC(f(~MK, ATC),
-             <<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>,
-             <'CDA', furtherData>, ATC, <'IAD', CID>), 
+             <<<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>, 
+              <'CDA', furtherData>, ATC, 'IAD', CID>), 
          <~nc, 
           sign(<'05', ~nc, CID, 
                 MAC(f(~MK, ATC),
-                    <<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>,
-                    <'CDA', furtherData>, ATC, <'IAD', CID>), 
+                    <<<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>, 
+                     <'CDA', furtherData>, ATC, 'IAD', CID>), 
                 h(<<<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>, 
                    CID, ATC, 
                    MAC(f(~MK, ATC),
-                       <<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>,
-                       <'CDA', furtherData>, ATC, <'IAD', CID>), 
+                       <<<amount, country, currency, date, type, UN>, 'TVR', CVM, 'HHMMSS'>, 
+                        <'CDA', furtherData>, ATC, 'IAD', CID>), 
                    'IAD', CID>), 
                 UN>,
                ~privkCard)
@@ -1287,7 +1286,7 @@ rule (modulo E) Terminal_Receives_AC_CDA:
 rule (modulo E) Bank_Receives_AC:
    [
    Recv( $Terminal, $Bank, <channelID, 'Mastercard', '1'>,
-         <<~PAN, AIP, CVM, X, ATC, MAC(f(~MK, ATC), X, AIP, ATC, IAD), IAD>, 
+         <<~PAN, AIP, CVM, X, ATC, MAC(f(~MK, ATC), <X, AIP, ATC, IAD>), IAD>, 
           encPIN>
    ),
    !Shk( ~PAN, ~MK ), !IssuingBank( ~PAN, $Bank )
@@ -1295,9 +1294,9 @@ rule (modulo E) Bank_Receives_AC:
   --[ Once( <~PAN, ATC, 'Bank'> ) ]->
    [
    Bank_Checked_AC( $Bank, $Terminal,
-                    <~PAN, AIP, CVM, X, ATC, MAC(f(~MK, ATC), X, AIP, ATC, IAD), IAD>,
+                    <~PAN, AIP, CVM, X, ATC, MAC(f(~MK, ATC), <X, AIP, ATC, IAD>), IAD>,
                     encPIN, channelID,
-                    DES3(f(~MK, ATC), (MAC(f(~MK, ATC), X, AIP, ATC, IAD)⊕p8('ARC')))
+                    MAC_arpc(f(~MK, ATC), (MAC(f(~MK, ATC), <X, AIP, ATC, IAD>)⊕p8('ARC')))
    )
    ]
 
@@ -1311,7 +1310,7 @@ rule (modulo E) Bank_Receives_AC_Failed:
    !Shk( ~PAN, ~MK )
    ]
   --[
-  NEq( MAC(f(~MK, ATC), X, AIP, ATC, IAD), AC ),
+  NEq( MAC(f(~MK, ATC), <X, AIP, ATC, IAD>), AC ),
   BankDeclines( <~PAN, AIP, CVM, X, ATC, AC, IAD> )
   ]->
    [ ]
@@ -1428,31 +1427,31 @@ rule (modulo E) Card_Responds_To_GPO_EMV_Visa:
            <'Card', 'Terminal', ~PAN, <'EMV', $furtherData>, CVM, 
             <<acType, CVM>, amount, country, currency, date, type, UN>, ATC, 
             MAC(f(~MK, ATC),
-                <<acType, CVM>, amount, country, currency, date, type, UN>,
-                <'EMV', $furtherData>, ATC, <'IAD', 'ARQC'>), 
+                <<<acType, CVM>, amount, country, currency, date, type, UN>, 
+                 <'EMV', $furtherData>, ATC, 'IAD', 'ARQC'>), 
             'IAD', 'ARQC'>
   ),
   Running( ~PAN, $Bank,
            <'Card', 'Bank', ~PAN, <'EMV', $furtherData>, CVM, 
             <<acType, CVM>, amount, country, currency, date, type, UN>, ATC, 
             MAC(f(~MK, ATC),
-                <<acType, CVM>, amount, country, currency, date, type, UN>,
-                <'EMV', $furtherData>, ATC, <'IAD', 'ARQC'>), 
+                <<<acType, CVM>, amount, country, currency, date, type, UN>, 
+                 <'EMV', $furtherData>, ATC, 'IAD', 'ARQC'>), 
             'IAD', 'ARQC'>
   )
   ]->
    [
    Out( <<'EMV', $furtherData>, 'AFL', <~PAN, ~expDate>, <'IAD', 'ARQC'>, 
          MAC(f(~MK, ATC),
-             <<acType, CVM>, amount, country, currency, date, type, UN>,
-             <'EMV', $furtherData>, ATC, <'IAD', 'ARQC'>), 
+             <<<acType, CVM>, amount, country, currency, date, type, UN>, 
+              <'EMV', $furtherData>, ATC, 'IAD', 'ARQC'>), 
          'ARQC', ATC, CVM>
    ),
    Card_Responded_To_GPO_Visa( ~PAN, <'EMV', $furtherData>,
                                <<acType, CVM>, amount, country, currency, date, type, UN>, ATC,
                                MAC(f(~MK, ATC),
-                                   <<acType, CVM>, amount, country, currency, date, type, UN>,
-                                   <'EMV', $furtherData>, ATC, <'IAD', 'ARQC'>),
+                                   <<<acType, CVM>, amount, country, currency, date, type, UN>, 
+                                    <'EMV', $furtherData>, ATC, 'IAD', 'ARQC'>),
                                'ARQC', CVM, <'IAD', 'ARQC'>
    )
    ]
@@ -1470,14 +1469,16 @@ rule (modulo E) Card_Responds_To_GPO_DDA_Visa:
   --[ OneCard( ), Once( <~PAN, ATC, 'Card'> ), NEq( CVM, 'CDCVM' ) ]->
    [
    Out( <<'DDA', $furtherData>, 'AFL', <~PAN, ~expDate>, <'IAD', CID>, 
-         MAC(f(~MK, ATC), <<CID, CVM>, amount, country, currency, date, type, UN>,
-             <'DDA', $furtherData>, ATC, <'IAD', CID>), 
+         MAC(f(~MK, ATC),
+             <<<CID, CVM>, amount, country, currency, date, type, UN>, 
+              <'DDA', $furtherData>, ATC, 'IAD', CID>), 
          CID, ATC, CVM>
    ),
    Card_Responded_To_GPO_Visa( ~PAN, <'DDA', $furtherData>,
                                <<CID, CVM>, amount, country, currency, date, type, UN>, ATC,
-                               MAC(f(~MK, ATC), <<CID, CVM>, amount, country, currency, date, type, UN>,
-                                   <'DDA', $furtherData>, ATC, <'IAD', CID>),
+                               MAC(f(~MK, ATC),
+                                   <<<CID, CVM>, amount, country, currency, date, type, UN>, 
+                                    <'DDA', $furtherData>, ATC, 'IAD', CID>),
                                CID, CVM, <'IAD', CID>
    )
    ]
@@ -2220,7 +2221,8 @@ rule (modulo E) Bank_Receives_AC_Visa:
    [
    Recv( $Terminal, $Bank, <channelID, 'Visa', '1'>,
          <
-          <~PAN, AIP, CVM, PDOL, ATC, MAC(f(~MK, ATC), PDOL, AIP, ATC, IAD), IAD>, 
+          <~PAN, AIP, CVM, PDOL, ATC, MAC(f(~MK, ATC), <PDOL, AIP, ATC, IAD>), IAD
+          >, 
           encPIN>
    ),
    !Shk( ~PAN, ~MK ), !IssuingBank( ~PAN, $Bank )
@@ -2228,9 +2230,11 @@ rule (modulo E) Bank_Receives_AC_Visa:
   --[ Once( <~PAN, ATC, 'Bank'> ) ]->
    [
    Bank_Checked_AC_Visa( $Bank, $Terminal,
-                         <~PAN, AIP, CVM, PDOL, ATC, MAC(f(~MK, ATC), PDOL, AIP, ATC, IAD), IAD>,
+                         <~PAN, AIP, CVM, PDOL, ATC, MAC(f(~MK, ATC), <PDOL, AIP, ATC, IAD>), IAD
+                         >,
                          encPIN, channelID,
-                         DES3(f(~MK, ATC), (MAC(f(~MK, ATC), PDOL, AIP, ATC, IAD)⊕p8('ARC')))
+                         MAC_arpc(f(~MK, ATC),
+                                  (MAC(f(~MK, ATC), <PDOL, AIP, ATC, IAD>)⊕p8('ARC')))
    )
    ]
 
@@ -2245,7 +2249,7 @@ rule (modulo E) Bank_Receives_AC_Failed_Visa:
    !Shk( ~PAN, ~MK )
    ]
   --[
-  NEq( MAC(f(~MK, ATC), PDOL, AIP, ATC, IAD), AC ),
+  NEq( MAC(f(~MK, ATC), <PDOL, AIP, ATC, IAD>), AC ),
   BankDeclines( <~PAN, AIP, CVM, PDOL, ATC, AC, IAD> )
   ]->
    [ ]
@@ -2420,8 +2424,8 @@ solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
                            <'Card', 'Terminal', ~PAN, <'DDA', $furtherData>, CTQ, 
                             <<'TC', CTQ>, amount, country, currency, date, type, UN>, ~ATC, 
                             MAC(f(~MK, ~ATC),
-                                <<'TC', CTQ>, amount, country, currency, date, type, UN>,
-                                <'DDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                                <<<'TC', CTQ>, amount, country, currency, date, type, UN>, 
+                                 <'DDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                             'IAD', 'TC'>
                    ) @ #j )
               case Terminal_Commits_TC_Visa
@@ -2433,9 +2437,10 @@ solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
                                                    >, 
                                                    ~ATC, 
                                                    MAC(f(~MK, ~ATC),
-                                                       <<'TC', CTQ>, $amount, country, currency, date, type, 
-                                                        ~UN>,
-                                                       <'DDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                                                       <
+                                                        <<'TC', CTQ>, $amount, country, currency, date, type, 
+                                                         ~UN>, 
+                                                        <'DDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                                                    'IAD', 'TC'>,
                                                   ~channelID
                        ) ▶₀ #j )
@@ -2452,9 +2457,10 @@ solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
                                           'Purchase', ~UN>, 
                                          ~ATC, 
                                          MAC(f(~MK, ~ATC),
-                                             <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                              'Purchase', ~UN>,
-                                             <'DDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                                             <
+                                              <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                               'Purchase', ~UN>, 
+                                              <'DDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                                          'IAD', 'TC'>
                                ) @ #k )
                           case Card_Responds_To_ReadRecord_DDA_Visa
@@ -2465,10 +2471,11 @@ solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
                                                                 'CHF', 'YYMMDD', 'Purchase', ~UN>,
                                                                ~ATC,
                                                                MAC(f(~MK, ~ATC),
-                                                                   <<'TC', 'NoPIN'>, $amount, 'Switzerland', 
-                                                                    'CHF', 'YYMMDD', 'Purchase', ~UN>,
-                                                                   <'DDA', $furtherData>, ~ATC,
-                                                                   <'IAD', 'TC'>),
+                                                                   <
+                                                                    <<'TC', 'NoPIN'>, $amount, 'Switzerland', 
+                                                                     'CHF', 'YYMMDD', 'Purchase', ~UN>, 
+                                                                    <'DDA', $furtherData>, ~ATC, 'IAD', 'TC'
+                                                                   >),
                                                                CID, 'NoPIN', <'IAD', 'TC'>
                                    ) ▶₀ #k )
                               case Card_Responds_To_GPO_DDA_Visa
@@ -2478,9 +2485,10 @@ solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
                                                'Purchase', ~UN>, 
                                               ~ATC, 
                                               MAC(f(~MK, ~ATC),
-                                                  <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 
-                                                   'Purchase', ~UN>,
-                                                  <'DDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                                                  <
+                                                   <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 
+                                                    'Purchase', ~UN>, 
+                                                   <'DDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                                               'IAD', 'TC'>
                                      ) @ #l )
                                 case Bank_Commits_Visa
@@ -2490,9 +2498,10 @@ solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
                                                             'YYMMDD', 'Purchase', ~UN>, 
                                                            ~ATC, 
                                                            MAC(f(~MK, ~ATC),
-                                                               <<'TC', 'NoPIN'>, $amount, 'Switzerland', 
-                                                                'CHF', 'YYMMDD', 'Purchase', ~UN>,
-                                                               <'DDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                                                               <
+                                                                <<'TC', 'NoPIN'>, $amount, 'Switzerland', 
+                                                                 'CHF', 'YYMMDD', 'Purchase', ~UN>, 
+                                                                <'DDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                                                            'IAD', 'TC'>,
                                                           channelID.1, ARPC
                                        ) ▶₀ #l )
@@ -2519,9 +2528,10 @@ solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
                                                               'YYMMDD', 'Purchase', ~UN>, 
                                                              ~ATC, 
                                                              MAC(f(~MK, ~ATC),
-                                                                 <<'TC', 'NoPIN'>, $amount, 'Switzerland', 
-                                                                  'CHF', 'YYMMDD', 'Purchase', ~UN>,
-                                                                 <'DDA', $furtherData>, ~ATC, <'IAD', 'TC'>), 
+                                                                 <
+                                                                  <<'TC', 'NoPIN'>, $amount, 'Switzerland', 
+                                                                   'CHF', 'YYMMDD', 'Purchase', ~UN>, 
+                                                                  <'DDA', $furtherData>, ~ATC, 'IAD', 'TC'>), 
                                                              'IAD', 'TC'>, 
                                                             'Null'>
                                                      ) ▶₀ #vr.30 )
@@ -2531,10 +2541,12 @@ solve( Running( PAN, 'Terminal', <'Card', 'Terminal', t> ) @ #i )
                                                   solve( !KU( pk(~privkCard) ) @ #vk.56 )
                                                     case Card_Responds_To_ReadRecord_DDA_Visa
                                                     solve( !KU( MAC(f(~MK, ~ATC),
-                                                                    <<'TC', 'NoPIN'>, $amount, 'Switzerland', 
-                                                                     'CHF', 'YYMMDD', 'Purchase', ~UN>,
-                                                                    <'DDA', $furtherData>, ~ATC,
-                                                                    <'IAD', 'TC'>)
+                                                                    <
+                                                                     <<'TC', 'NoPIN'>, $amount, 
+                                                                      'Switzerland', 'CHF', 'YYMMDD', 
+                                                                      'Purchase', ~UN>, 
+                                                                     <'DDA', $furtherData>, ~ATC, 'IAD', 'TC'
+                                                                    >)
                                                            ) @ #vk.58 )
                                                       case Card_Responds_To_GPO_DDA_Visa
                                                       SOLVED // trace found
@@ -2741,8 +2753,9 @@ solve( Commit( B, P, <r, 'Bank', t> ) @ #i )
                      <
                       <~PAN, <'DDA', furtherData>, CVM, 
                        <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                       MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                           <'DDA', furtherData>, ATC, IAD), 
+                       MAC(f(~MK, ATC),
+                           <<TTQ, $amount, country, currency, date, type, UN>, 
+                            <'DDA', furtherData>, ATC, IAD>), 
                        IAD>, 
                       'Null'>
                ) ▶₀ #vr.1 )
@@ -2920,8 +2933,9 @@ solve( Commit( B, P, <r, 'Bank', t> ) @ #i )
                      <
                       <~PAN, <'DDA', furtherData>, CVM, 
                        <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                       MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                           <'DDA', furtherData>, ATC, IAD), 
+                       MAC(f(~MK, ATC),
+                           <<TTQ, $amount, country, currency, date, type, UN>, 
+                            <'DDA', furtherData>, ATC, IAD>), 
                        IAD>, 
                       'Null'>
                ) ▶₀ #vr.1 )
@@ -2945,17 +2959,18 @@ solve( Commit( B, P, <r, 'Bank', t> ) @ #i )
                      ) @ #vk.35 )
                 case Card_Responds_To_ReadRecord_DDA_Visa
                 solve( !KU( MAC(f(~MK, ~ATC),
-                                <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
-                                 ~UN>,
-                                <'DDA', $furtherData>, ~ATC, IAD)
+                                <
+                                 <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
+                                  ~UN>, 
+                                 <'DDA', $furtherData>, ~ATC, IAD>)
                        ) @ #vk.41 )
                   case Card_Responds_To_GPO_DDA_Visa
                   by contradiction /* from formulas */
                 next
                   case c_MAC
-                  solve( !KU( f(~MK, ~ATC) ) @ #vk.64 )
+                  solve( !KU( f(~MK, ~ATC) ) @ #vk.66 )
                     case c_f
-                    solve( !KU( ~MK ) @ #vk.72 )
+                    solve( !KU( ~MK ) @ #vk.75 )
                       case Compromise_Bank_Card_ShK
                       by contradiction /* from formulas */
                     qed
@@ -3063,14 +3078,15 @@ solve( Commit( B, P, <r, 'Bank', t> ) @ #i )
                      ) @ #vk.35 )
                 case Card_Responds_To_ReadRecord_DDA_Visa
                 solve( !KU( MAC(f(~MK, ~ATC),
-                                <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
-                                 ~UN>,
-                                <'DDA', $furtherData>, ~ATC, IAD)
+                                <
+                                 <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
+                                  ~UN>, 
+                                 <'DDA', $furtherData>, ~ATC, IAD>)
                        ) @ #vk.41 )
                   case c_MAC
-                  solve( !KU( f(~MK, ~ATC) ) @ #vk.64 )
+                  solve( !KU( f(~MK, ~ATC) ) @ #vk.66 )
                     case c_f
-                    solve( !KU( ~MK ) @ #vk.74 )
+                    solve( !KU( ~MK ) @ #vk.77 )
                       case Compromise_Bank_Card_ShK
                       by contradiction /* from formulas */
                     qed
@@ -3209,8 +3225,9 @@ solve( Commit( B, P, <r, 'Bank', t> ) @ #i )
                         <
                          <~PAN, <'DDA', furtherData>, 'OnlinePIN', 
                           <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                          MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                              <'DDA', furtherData>, ATC, IAD), 
+                          MAC(f(~MK, ATC),
+                              <<TTQ, $amount, country, currency, date, type, UN>, 
+                               <'DDA', furtherData>, ATC, IAD>), 
                           IAD>, 
                          aenc(~PIN, pk(~privkBank))>
                   ) ▶₀ #vr.1 )
@@ -3226,8 +3243,9 @@ solve( Commit( B, P, <r, 'Bank', t> ) @ #i )
                         <
                          <~PAN, <'DDA', furtherData>, 'OnlinePIN', 
                           <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                          MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                              <'DDA', furtherData>, ATC, IAD), 
+                          MAC(f(~MK, ATC),
+                              <<TTQ, $amount, country, currency, date, type, UN>, 
+                               <'DDA', furtherData>, ATC, IAD>), 
                           IAD>, 
                          aenc(~PIN, pk(~privkBank))>
                   ) ▶₀ #vr.1 )
@@ -3250,8 +3268,9 @@ next
                      <
                       <~PAN, <'DDA', furtherData>, CVM, 
                        <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                       MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                           <'DDA', furtherData>, ATC, IAD), 
+                       MAC(f(~MK, ATC),
+                           <<TTQ, $amount, country, currency, date, type, UN>, 
+                            <'DDA', furtherData>, ATC, IAD>), 
                        IAD>, 
                       'Null'>
                ) ▶₀ #vr.1 )
@@ -3276,8 +3295,9 @@ next
                      <
                       <~PAN, <'DDA', furtherData>, CVM, 
                        <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                       MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                           <'DDA', furtherData>, ATC, IAD), 
+                       MAC(f(~MK, ATC),
+                           <<TTQ, $amount, country, currency, date, type, UN>, 
+                            <'DDA', furtherData>, ATC, IAD>), 
                        IAD>, 
                       'Null'>
                ) ▶₀ #vr.1 )
@@ -3302,8 +3322,9 @@ next
                         <
                          <~PAN, <'DDA', furtherData>, 'OnlinePIN', 
                           <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                          MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                              <'DDA', furtherData>, ATC, IAD), 
+                          MAC(f(~MK, ATC),
+                              <<TTQ, $amount, country, currency, date, type, UN>, 
+                               <'DDA', furtherData>, ATC, IAD>), 
                           IAD>, 
                          aenc(~PIN, pk(~privkBank))>
                   ) ▶₀ #vr.1 )
@@ -3319,8 +3340,9 @@ next
                         <
                          <~PAN, <'DDA', furtherData>, 'OnlinePIN', 
                           <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                          MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                              <'DDA', furtherData>, ATC, IAD), 
+                          MAC(f(~MK, ATC),
+                              <<TTQ, $amount, country, currency, date, type, UN>, 
+                               <'DDA', furtherData>, ATC, IAD>), 
                           IAD>, 
                          aenc(~PIN, pk(~privkBank))>
                   ) ▶₀ #vr.1 )
@@ -3366,8 +3388,9 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        <
                         <~PAN, <'DDA', furtherData>, CVM, 
                          <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                         MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                             <'DDA', furtherData>, ATC, IAD), 
+                         MAC(f(~MK, ATC),
+                             <<TTQ, $amount, country, currency, date, type, UN>, 
+                              <'DDA', furtherData>, ATC, IAD>), 
                          IAD>, 
                         'Null'>
                  ) ▶₀ #vr.1 )
@@ -3545,8 +3568,9 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        <
                         <~PAN, <'DDA', furtherData>, CVM, 
                          <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                         MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                             <'DDA', furtherData>, ATC, IAD), 
+                         MAC(f(~MK, ATC),
+                             <<TTQ, $amount, country, currency, date, type, UN>, 
+                              <'DDA', furtherData>, ATC, IAD>), 
                          IAD>, 
                         'Null'>
                  ) ▶₀ #vr.1 )
@@ -3561,17 +3585,18 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        ) @ #vk.35 )
                   case Card_Responds_To_ReadRecord_DDA_Visa
                   solve( !KU( MAC(f(~MK, ~ATC),
-                                  <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
-                                   ~UN>,
-                                  <'DDA', $furtherData>, ~ATC, IAD)
+                                  <
+                                   <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
+                                    ~UN>, 
+                                   <'DDA', $furtherData>, ~ATC, IAD>)
                          ) @ #vk.41 )
                     case Card_Responds_To_GPO_DDA_Visa
                     by contradiction /* from formulas */
                   next
                     case c_MAC
-                    solve( !KU( f(~MK, ~ATC) ) @ #vk.83 )
+                    solve( !KU( f(~MK, ~ATC) ) @ #vk.85 )
                       case c_f
-                      solve( !KU( ~MK ) @ #vk.91 )
+                      solve( !KU( ~MK ) @ #vk.94 )
                         case Compromise_Bank_Card_ShK
                         by contradiction /* from formulas */
                       qed
@@ -3592,17 +3617,18 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        ) @ #vk.35 )
                   case Card_Responds_To_ReadRecord_DDA_Visa
                   solve( !KU( MAC(f(~MK, ~ATC),
-                                  <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
-                                   ~UN>,
-                                  <'DDA', $furtherData>, ~ATC, IAD)
+                                  <
+                                   <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
+                                    ~UN>, 
+                                   <'DDA', $furtherData>, ~ATC, IAD>)
                          ) @ #vk.41 )
                     case Card_Responds_To_GPO_DDA_Visa
                     by contradiction /* from formulas */
                   next
                     case c_MAC
-                    solve( !KU( f(~MK, ~ATC) ) @ #vk.84 )
+                    solve( !KU( f(~MK, ~ATC) ) @ #vk.86 )
                       case c_f
-                      solve( !KU( ~MK ) @ #vk.92 )
+                      solve( !KU( ~MK ) @ #vk.95 )
                         case Compromise_Bank_Card_ShK
                         by contradiction /* from formulas */
                       qed
@@ -3632,17 +3658,18 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        ) @ #vk.35 )
                   case Card_Responds_To_ReadRecord_DDA_Visa
                   solve( !KU( MAC(f(~MK, ~ATC),
-                                  <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
-                                   ~UN>,
-                                  <'DDA', $furtherData>, ~ATC, IAD)
+                                  <
+                                   <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
+                                    ~UN>, 
+                                   <'DDA', $furtherData>, ~ATC, IAD>)
                          ) @ #vk.41 )
                     case Card_Responds_To_GPO_DDA_Visa
                     by contradiction /* from formulas */
                   next
                     case c_MAC
-                    solve( !KU( f(~MK, ~ATC) ) @ #vk.94 )
+                    solve( !KU( f(~MK, ~ATC) ) @ #vk.96 )
                       case c_f
-                      solve( !KU( ~MK ) @ #vk.102 )
+                      solve( !KU( ~MK ) @ #vk.105 )
                         case Compromise_Bank_Card_ShK
                         by contradiction /* from formulas */
                       qed
@@ -3663,17 +3690,18 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        ) @ #vk.35 )
                   case Card_Responds_To_ReadRecord_DDA_Visa
                   solve( !KU( MAC(f(~MK, ~ATC),
-                                  <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
-                                   ~UN>,
-                                  <'DDA', $furtherData>, ~ATC, IAD)
+                                  <
+                                   <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
+                                    ~UN>, 
+                                   <'DDA', $furtherData>, ~ATC, IAD>)
                          ) @ #vk.41 )
                     case Card_Responds_To_GPO_DDA_Visa
                     by contradiction /* from formulas */
                   next
                     case c_MAC
-                    solve( !KU( f(~MK, ~ATC) ) @ #vk.95 )
+                    solve( !KU( f(~MK, ~ATC) ) @ #vk.97 )
                       case c_f
-                      solve( !KU( ~MK ) @ #vk.103 )
+                      solve( !KU( ~MK ) @ #vk.106 )
                         case Compromise_Bank_Card_ShK
                         by contradiction /* from formulas */
                       qed
@@ -3703,17 +3731,18 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        ) @ #vk.35 )
                   case Card_Responds_To_ReadRecord_DDA_Visa
                   solve( !KU( MAC(f(~MK, ~ATC),
-                                  <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
-                                   ~UN>,
-                                  <'DDA', $furtherData>, ~ATC, IAD)
+                                  <
+                                   <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
+                                    ~UN>, 
+                                   <'DDA', $furtherData>, ~ATC, IAD>)
                          ) @ #vk.41 )
                     case Card_Responds_To_GPO_DDA_Visa
                     by contradiction /* from formulas */
                   next
                     case c_MAC
-                    solve( !KU( f(~MK, ~ATC) ) @ #vk.95 )
+                    solve( !KU( f(~MK, ~ATC) ) @ #vk.97 )
                       case c_f
-                      solve( !KU( ~MK ) @ #vk.103 )
+                      solve( !KU( ~MK ) @ #vk.106 )
                         case Compromise_Bank_Card_ShK
                         by contradiction /* from formulas */
                       qed
@@ -3734,17 +3763,18 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        ) @ #vk.35 )
                   case Card_Responds_To_ReadRecord_DDA_Visa
                   solve( !KU( MAC(f(~MK, ~ATC),
-                                  <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
-                                   ~UN>,
-                                  <'DDA', $furtherData>, ~ATC, IAD)
+                                  <
+                                   <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
+                                    ~UN>, 
+                                   <'DDA', $furtherData>, ~ATC, IAD>)
                          ) @ #vk.41 )
                     case Card_Responds_To_GPO_DDA_Visa
                     by contradiction /* from formulas */
                   next
                     case c_MAC
-                    solve( !KU( f(~MK, ~ATC) ) @ #vk.95 )
+                    solve( !KU( f(~MK, ~ATC) ) @ #vk.97 )
                       case c_f
-                      solve( !KU( ~MK ) @ #vk.103 )
+                      solve( !KU( ~MK ) @ #vk.106 )
                         case Compromise_Bank_Card_ShK
                         by contradiction /* from formulas */
                       qed
@@ -3774,17 +3804,18 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        ) @ #vk.35 )
                   case Card_Responds_To_ReadRecord_DDA_Visa
                   solve( !KU( MAC(f(~MK, ~ATC),
-                                  <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
-                                   ~UN>,
-                                  <'DDA', $furtherData>, ~ATC, IAD)
+                                  <
+                                   <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
+                                    ~UN>, 
+                                   <'DDA', $furtherData>, ~ATC, IAD>)
                          ) @ #vk.41 )
                     case Card_Responds_To_GPO_DDA_Visa
                     by contradiction /* from formulas */
                   next
                     case c_MAC
-                    solve( !KU( f(~MK, ~ATC) ) @ #vk.84 )
+                    solve( !KU( f(~MK, ~ATC) ) @ #vk.86 )
                       case c_f
-                      solve( !KU( ~MK ) @ #vk.92 )
+                      solve( !KU( ~MK ) @ #vk.95 )
                         case Compromise_Bank_Card_ShK
                         by contradiction /* from formulas */
                       qed
@@ -3805,17 +3836,18 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        ) @ #vk.35 )
                   case Card_Responds_To_ReadRecord_DDA_Visa
                   solve( !KU( MAC(f(~MK, ~ATC),
-                                  <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
-                                   ~UN>,
-                                  <'DDA', $furtherData>, ~ATC, IAD)
+                                  <
+                                   <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
+                                    ~UN>, 
+                                   <'DDA', $furtherData>, ~ATC, IAD>)
                          ) @ #vk.41 )
                     case Card_Responds_To_GPO_DDA_Visa
                     by contradiction /* from formulas */
                   next
                     case c_MAC
-                    solve( !KU( f(~MK, ~ATC) ) @ #vk.85 )
+                    solve( !KU( f(~MK, ~ATC) ) @ #vk.87 )
                       case c_f
-                      solve( !KU( ~MK ) @ #vk.93 )
+                      solve( !KU( ~MK ) @ #vk.96 )
                         case Compromise_Bank_Card_ShK
                         by contradiction /* from formulas */
                       qed
@@ -3845,17 +3877,18 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        ) @ #vk.35 )
                   case Card_Responds_To_ReadRecord_DDA_Visa
                   solve( !KU( MAC(f(~MK, ~ATC),
-                                  <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
-                                   ~UN>,
-                                  <'DDA', $furtherData>, ~ATC, IAD)
+                                  <
+                                   <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
+                                    ~UN>, 
+                                   <'DDA', $furtherData>, ~ATC, IAD>)
                          ) @ #vk.41 )
                     case Card_Responds_To_GPO_DDA_Visa
                     by contradiction /* from formulas */
                   next
                     case c_MAC
-                    solve( !KU( f(~MK, ~ATC) ) @ #vk.84 )
+                    solve( !KU( f(~MK, ~ATC) ) @ #vk.86 )
                       case c_f
-                      solve( !KU( ~MK ) @ #vk.92 )
+                      solve( !KU( ~MK ) @ #vk.95 )
                         case Compromise_Bank_Card_ShK
                         by contradiction /* from formulas */
                       qed
@@ -3876,17 +3909,18 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        ) @ #vk.35 )
                   case Card_Responds_To_ReadRecord_DDA_Visa
                   solve( !KU( MAC(f(~MK, ~ATC),
-                                  <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
-                                   ~UN>,
-                                  <'DDA', $furtherData>, ~ATC, IAD)
+                                  <
+                                   <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
+                                    ~UN>, 
+                                   <'DDA', $furtherData>, ~ATC, IAD>)
                          ) @ #vk.41 )
                     case Card_Responds_To_GPO_DDA_Visa
                     by contradiction /* from formulas */
                   next
                     case c_MAC
-                    solve( !KU( f(~MK, ~ATC) ) @ #vk.85 )
+                    solve( !KU( f(~MK, ~ATC) ) @ #vk.87 )
                       case c_f
-                      solve( !KU( ~MK ) @ #vk.93 )
+                      solve( !KU( ~MK ) @ #vk.96 )
                         case Compromise_Bank_Card_ShK
                         by contradiction /* from formulas */
                       qed
@@ -3925,14 +3959,15 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        ) @ #vk.35 )
                   case Card_Responds_To_ReadRecord_DDA_Visa
                   solve( !KU( MAC(f(~MK, ~ATC),
-                                  <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
-                                   ~UN>,
-                                  <'DDA', $furtherData>, ~ATC, IAD)
+                                  <
+                                   <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
+                                    ~UN>, 
+                                   <'DDA', $furtherData>, ~ATC, IAD>)
                          ) @ #vk.41 )
                     case c_MAC
-                    solve( !KU( f(~MK, ~ATC) ) @ #vk.84 )
+                    solve( !KU( f(~MK, ~ATC) ) @ #vk.86 )
                       case c_f
-                      solve( !KU( ~MK ) @ #vk.93 )
+                      solve( !KU( ~MK ) @ #vk.96 )
                         case Compromise_Bank_Card_ShK
                         by contradiction /* from formulas */
                       qed
@@ -3953,14 +3988,15 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        ) @ #vk.35 )
                   case Card_Responds_To_ReadRecord_DDA_Visa
                   solve( !KU( MAC(f(~MK, ~ATC),
-                                  <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
-                                   ~UN>,
-                                  <'DDA', $furtherData>, ~ATC, IAD)
+                                  <
+                                   <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
+                                    ~UN>, 
+                                   <'DDA', $furtherData>, ~ATC, IAD>)
                          ) @ #vk.41 )
                     case c_MAC
-                    solve( !KU( f(~MK, ~ATC) ) @ #vk.83 )
+                    solve( !KU( f(~MK, ~ATC) ) @ #vk.85 )
                       case c_f
-                      solve( !KU( ~MK ) @ #vk.93 )
+                      solve( !KU( ~MK ) @ #vk.96 )
                         case Compromise_Bank_Card_ShK
                         by contradiction /* from formulas */
                       qed
@@ -3990,14 +4026,15 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        ) @ #vk.35 )
                   case Card_Responds_To_ReadRecord_DDA_Visa
                   solve( !KU( MAC(f(~MK, ~ATC),
-                                  <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
-                                   ~UN>,
-                                  <'DDA', $furtherData>, ~ATC, IAD)
+                                  <
+                                   <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
+                                    ~UN>, 
+                                   <'DDA', $furtherData>, ~ATC, IAD>)
                          ) @ #vk.41 )
                     case c_MAC
-                    solve( !KU( f(~MK, ~ATC) ) @ #vk.95 )
+                    solve( !KU( f(~MK, ~ATC) ) @ #vk.97 )
                       case c_f
-                      solve( !KU( ~MK ) @ #vk.104 )
+                      solve( !KU( ~MK ) @ #vk.107 )
                         case Compromise_Bank_Card_ShK
                         by contradiction /* from formulas */
                       qed
@@ -4018,14 +4055,15 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        ) @ #vk.35 )
                   case Card_Responds_To_ReadRecord_DDA_Visa
                   solve( !KU( MAC(f(~MK, ~ATC),
-                                  <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
-                                   ~UN>,
-                                  <'DDA', $furtherData>, ~ATC, IAD)
+                                  <
+                                   <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
+                                    ~UN>, 
+                                   <'DDA', $furtherData>, ~ATC, IAD>)
                          ) @ #vk.41 )
                     case c_MAC
-                    solve( !KU( f(~MK, ~ATC) ) @ #vk.95 )
+                    solve( !KU( f(~MK, ~ATC) ) @ #vk.97 )
                       case c_f
-                      solve( !KU( ~MK ) @ #vk.104 )
+                      solve( !KU( ~MK ) @ #vk.107 )
                         case Compromise_Bank_Card_ShK
                         by contradiction /* from formulas */
                       qed
@@ -4055,14 +4093,15 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        ) @ #vk.35 )
                   case Card_Responds_To_ReadRecord_DDA_Visa
                   solve( !KU( MAC(f(~MK, ~ATC),
-                                  <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
-                                   ~UN>,
-                                  <'DDA', $furtherData>, ~ATC, IAD)
+                                  <
+                                   <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
+                                    ~UN>, 
+                                   <'DDA', $furtherData>, ~ATC, IAD>)
                          ) @ #vk.41 )
                     case c_MAC
-                    solve( !KU( f(~MK, ~ATC) ) @ #vk.95 )
+                    solve( !KU( f(~MK, ~ATC) ) @ #vk.97 )
                       case c_f
-                      solve( !KU( ~MK ) @ #vk.104 )
+                      solve( !KU( ~MK ) @ #vk.107 )
                         case Compromise_Bank_Card_ShK
                         by contradiction /* from formulas */
                       qed
@@ -4083,14 +4122,15 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        ) @ #vk.35 )
                   case Card_Responds_To_ReadRecord_DDA_Visa
                   solve( !KU( MAC(f(~MK, ~ATC),
-                                  <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
-                                   ~UN>,
-                                  <'DDA', $furtherData>, ~ATC, IAD)
+                                  <
+                                   <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
+                                    ~UN>, 
+                                   <'DDA', $furtherData>, ~ATC, IAD>)
                          ) @ #vk.41 )
                     case c_MAC
-                    solve( !KU( f(~MK, ~ATC) ) @ #vk.94 )
+                    solve( !KU( f(~MK, ~ATC) ) @ #vk.96 )
                       case c_f
-                      solve( !KU( ~MK ) @ #vk.104 )
+                      solve( !KU( ~MK ) @ #vk.107 )
                         case Compromise_Bank_Card_ShK
                         by contradiction /* from formulas */
                       qed
@@ -4120,14 +4160,15 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        ) @ #vk.35 )
                   case Card_Responds_To_ReadRecord_DDA_Visa
                   solve( !KU( MAC(f(~MK, ~ATC),
-                                  <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
-                                   ~UN>,
-                                  <'DDA', $furtherData>, ~ATC, IAD)
+                                  <
+                                   <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
+                                    ~UN>, 
+                                   <'DDA', $furtherData>, ~ATC, IAD>)
                          ) @ #vk.41 )
                     case c_MAC
-                    solve( !KU( f(~MK, ~ATC) ) @ #vk.85 )
+                    solve( !KU( f(~MK, ~ATC) ) @ #vk.87 )
                       case c_f
-                      solve( !KU( ~MK ) @ #vk.94 )
+                      solve( !KU( ~MK ) @ #vk.97 )
                         case Compromise_Bank_Card_ShK
                         by contradiction /* from formulas */
                       qed
@@ -4148,14 +4189,15 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        ) @ #vk.35 )
                   case Card_Responds_To_ReadRecord_DDA_Visa
                   solve( !KU( MAC(f(~MK, ~ATC),
-                                  <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
-                                   ~UN>,
-                                  <'DDA', $furtherData>, ~ATC, IAD)
+                                  <
+                                   <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
+                                    ~UN>, 
+                                   <'DDA', $furtherData>, ~ATC, IAD>)
                          ) @ #vk.41 )
                     case c_MAC
-                    solve( !KU( f(~MK, ~ATC) ) @ #vk.84 )
+                    solve( !KU( f(~MK, ~ATC) ) @ #vk.86 )
                       case c_f
-                      solve( !KU( ~MK ) @ #vk.94 )
+                      solve( !KU( ~MK ) @ #vk.97 )
                         case Compromise_Bank_Card_ShK
                         by contradiction /* from formulas */
                       qed
@@ -4185,14 +4227,15 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        ) @ #vk.35 )
                   case Card_Responds_To_ReadRecord_DDA_Visa
                   solve( !KU( MAC(f(~MK, ~ATC),
-                                  <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
-                                   ~UN>,
-                                  <'DDA', $furtherData>, ~ATC, IAD)
+                                  <
+                                   <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
+                                    ~UN>, 
+                                   <'DDA', $furtherData>, ~ATC, IAD>)
                          ) @ #vk.41 )
                     case c_MAC
-                    solve( !KU( f(~MK, ~ATC) ) @ #vk.85 )
+                    solve( !KU( f(~MK, ~ATC) ) @ #vk.87 )
                       case c_f
-                      solve( !KU( ~MK ) @ #vk.94 )
+                      solve( !KU( ~MK ) @ #vk.97 )
                         case Compromise_Bank_Card_ShK
                         by contradiction /* from formulas */
                       qed
@@ -4213,14 +4256,15 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        ) @ #vk.35 )
                   case Card_Responds_To_ReadRecord_DDA_Visa
                   solve( !KU( MAC(f(~MK, ~ATC),
-                                  <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
-                                   ~UN>,
-                                  <'DDA', $furtherData>, ~ATC, IAD)
+                                  <
+                                   <<'TC', 'NoPIN'>, $amount, 'Switzerland', 'CHF', 'YYMMDD', 'Purchase', 
+                                    ~UN>, 
+                                   <'DDA', $furtherData>, ~ATC, IAD>)
                          ) @ #vk.41 )
                     case c_MAC
-                    solve( !KU( f(~MK, ~ATC) ) @ #vk.84 )
+                    solve( !KU( f(~MK, ~ATC) ) @ #vk.86 )
                       case c_f
-                      solve( !KU( ~MK ) @ #vk.94 )
+                      solve( !KU( ~MK ) @ #vk.97 )
                         case Compromise_Bank_Card_ShK
                         by contradiction /* from formulas */
                       qed
@@ -4464,8 +4508,9 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                           <
                            <~PAN, <'DDA', furtherData>, 'OnlinePIN', 
                             <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                            MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                <'DDA', furtherData>, ATC, IAD), 
+                            MAC(f(~MK, ATC),
+                                <<TTQ, $amount, country, currency, date, type, UN>, 
+                                 <'DDA', furtherData>, ATC, IAD>), 
                             IAD>, 
                            aenc(~PIN, pk(~privkBank))>
                     ) ▶₀ #vr.1 )
@@ -4481,8 +4526,9 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                           <
                            <~PAN, <'DDA', furtherData>, 'OnlinePIN', 
                             <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                            MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                <'DDA', furtherData>, ATC, IAD), 
+                            MAC(f(~MK, ATC),
+                                <<TTQ, $amount, country, currency, date, type, UN>, 
+                                 <'DDA', furtherData>, ATC, IAD>), 
                             IAD>, 
                            aenc(~PIN, pk(~privkBank))>
                     ) ▶₀ #vr.1 )
@@ -4505,8 +4551,9 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        <
                         <~PAN, <'DDA', furtherData>, CVM, 
                          <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                         MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                             <'DDA', furtherData>, ATC, IAD), 
+                         MAC(f(~MK, ATC),
+                             <<TTQ, $amount, country, currency, date, type, UN>, 
+                              <'DDA', furtherData>, ATC, IAD>), 
                          IAD>, 
                         'Null'>
                  ) ▶₀ #vr.1 )
@@ -4531,8 +4578,9 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                        <
                         <~PAN, <'DDA', furtherData>, CVM, 
                          <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                         MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                             <'DDA', furtherData>, ATC, IAD), 
+                         MAC(f(~MK, ATC),
+                             <<TTQ, $amount, country, currency, date, type, UN>, 
+                              <'DDA', furtherData>, ATC, IAD>), 
                          IAD>, 
                         'Null'>
                  ) ▶₀ #vr.1 )
@@ -4557,8 +4605,9 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                           <
                            <~PAN, <'DDA', furtherData>, 'OnlinePIN', 
                             <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                            MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                <'DDA', furtherData>, ATC, IAD), 
+                            MAC(f(~MK, ATC),
+                                <<TTQ, $amount, country, currency, date, type, UN>, 
+                                 <'DDA', furtherData>, ATC, IAD>), 
                             IAD>, 
                            aenc(~PIN, pk(~privkBank))>
                     ) ▶₀ #vr.1 )
@@ -4574,8 +4623,9 @@ solve( (∀ #j. (Running( P, B, <r, 'Bank', t> ) @ #j) ⇒ ¬(#j < #i))  ∥
                           <
                            <~PAN, <'DDA', furtherData>, 'OnlinePIN', 
                             <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                            MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                <'DDA', furtherData>, ATC, IAD), 
+                            MAC(f(~MK, ATC),
+                                <<TTQ, $amount, country, currency, date, type, UN>, 
+                                 <'DDA', furtherData>, ATC, IAD>), 
                             IAD>, 
                            aenc(~PIN, pk(~privkBank))>
                     ) ▶₀ #vr.1 )
@@ -4602,16 +4652,18 @@ next
             solve( Commit( B2, P2,
                            <'Card', 'Bank', ~PAN, <'DDA', furtherData>, CVM, 
                             <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                            MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                <'DDA', furtherData>, ATC, IAD), 
+                            MAC(f(~MK, ATC),
+                                <<TTQ, $amount, country, currency, date, type, UN>, 
+                                 <'DDA', furtherData>, ATC, IAD>), 
                             IAD>
                    ) @ #i2 )
               case Bank_Commits_Visa
               solve( Bank_Commits_Visa( $Bank.1, $Terminal.1,
                                         <~PAN, <'DDA', furtherData>, CVM, 
                                          <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                                         MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                             <'DDA', furtherData>, ATC, IAD), 
+                                         MAC(f(~MK, ATC),
+                                             <<TTQ, $amount, country, currency, date, type, UN>, 
+                                              <'DDA', furtherData>, ATC, IAD>), 
                                          IAD>,
                                         channelID.1, ARPC
                      ) ▶₀ #i2 )
@@ -4630,16 +4682,18 @@ next
             solve( Commit( B2, P2,
                            <'Card', 'Bank', ~PAN, <'DDA', furtherData>, CVM, 
                             <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                            MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                <'DDA', furtherData>, ATC, IAD), 
+                            MAC(f(~MK, ATC),
+                                <<TTQ, $amount, country, currency, date, type, UN>, 
+                                 <'DDA', furtherData>, ATC, IAD>), 
                             IAD>
                    ) @ #i2 )
               case Bank_Commits_Visa
               solve( Bank_Commits_Visa( $Bank.1, $Terminal.1,
                                         <~PAN, <'DDA', furtherData>, CVM, 
                                          <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                                         MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                             <'DDA', furtherData>, ATC, IAD), 
+                                         MAC(f(~MK, ATC),
+                                             <<TTQ, $amount, country, currency, date, type, UN>, 
+                                              <'DDA', furtherData>, ATC, IAD>), 
                                          IAD>,
                                         channelID.1, ARPC
                      ) ▶₀ #i2 )
@@ -4658,16 +4712,18 @@ next
             solve( Commit( B2, P2,
                            <'Card', 'Bank', ~PAN, <'DDA', furtherData>, 'OnlinePIN', 
                             <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                            MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                <'DDA', furtherData>, ATC, IAD), 
+                            MAC(f(~MK, ATC),
+                                <<TTQ, $amount, country, currency, date, type, UN>, 
+                                 <'DDA', furtherData>, ATC, IAD>), 
                             IAD>
                    ) @ #i2 )
               case Bank_Commits_Visa
               solve( Bank_Commits_Visa( $Bank.1, $Terminal.1,
                                         <~PAN, <'DDA', furtherData>, 'OnlinePIN', 
                                          <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                                         MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                             <'DDA', furtherData>, ATC, IAD), 
+                                         MAC(f(~MK, ATC),
+                                             <<TTQ, $amount, country, currency, date, type, UN>, 
+                                              <'DDA', furtherData>, ATC, IAD>), 
                                          IAD>,
                                         channelID.1, ARPC
                      ) ▶₀ #i2 )
@@ -4686,16 +4742,18 @@ next
             solve( Commit( B2, P2,
                            <'Card', 'Bank', ~PAN, <'DDA', furtherData>, 'OnlinePIN', 
                             <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                            MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                <'DDA', furtherData>, ATC, IAD), 
+                            MAC(f(~MK, ATC),
+                                <<TTQ, $amount, country, currency, date, type, UN>, 
+                                 <'DDA', furtherData>, ATC, IAD>), 
                             IAD>
                    ) @ #i2 )
               case Bank_Commits_Visa
               solve( Bank_Commits_Visa( $Bank.1, $Terminal.1,
                                         <~PAN, <'DDA', furtherData>, 'OnlinePIN', 
                                          <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                                         MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                             <'DDA', furtherData>, ATC, IAD), 
+                                         MAC(f(~MK, ATC),
+                                             <<TTQ, $amount, country, currency, date, type, UN>, 
+                                              <'DDA', furtherData>, ATC, IAD>), 
                                          IAD>,
                                         channelID.1, ARPC
                      ) ▶₀ #i2 )
@@ -4721,16 +4779,18 @@ next
             solve( Commit( B2, P2,
                            <'Terminal', 'Bank', ~PAN, <'DDA', furtherData>, CVM, 
                             <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                            MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                <'DDA', furtherData>, ATC, IAD), 
+                            MAC(f(~MK, ATC),
+                                <<TTQ, $amount, country, currency, date, type, UN>, 
+                                 <'DDA', furtherData>, ATC, IAD>), 
                             IAD>
                    ) @ #i2 )
               case Bank_Commits_Visa
               solve( Bank_Commits_Visa( $Bank.1, $Terminal.1,
                                         <~PAN, <'DDA', furtherData>, CVM, 
                                          <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                                         MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                             <'DDA', furtherData>, ATC, IAD), 
+                                         MAC(f(~MK, ATC),
+                                             <<TTQ, $amount, country, currency, date, type, UN>, 
+                                              <'DDA', furtherData>, ATC, IAD>), 
                                          IAD>,
                                         channelID.1, ARPC
                      ) ▶₀ #i2 )
@@ -4749,16 +4809,18 @@ next
             solve( Commit( B2, P2,
                            <'Terminal', 'Bank', ~PAN, <'DDA', furtherData>, CVM, 
                             <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                            MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                <'DDA', furtherData>, ATC, IAD), 
+                            MAC(f(~MK, ATC),
+                                <<TTQ, $amount, country, currency, date, type, UN>, 
+                                 <'DDA', furtherData>, ATC, IAD>), 
                             IAD>
                    ) @ #i2 )
               case Bank_Commits_Visa
               solve( Bank_Commits_Visa( $Bank.1, $Terminal.1,
                                         <~PAN, <'DDA', furtherData>, CVM, 
                                          <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                                         MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                             <'DDA', furtherData>, ATC, IAD), 
+                                         MAC(f(~MK, ATC),
+                                             <<TTQ, $amount, country, currency, date, type, UN>, 
+                                              <'DDA', furtherData>, ATC, IAD>), 
                                          IAD>,
                                         channelID.1, ARPC
                      ) ▶₀ #i2 )
@@ -4777,16 +4839,18 @@ next
             solve( Commit( B2, P2,
                            <'Terminal', 'Bank', ~PAN, <'DDA', furtherData>, 'OnlinePIN', 
                             <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                            MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                <'DDA', furtherData>, ATC, IAD), 
+                            MAC(f(~MK, ATC),
+                                <<TTQ, $amount, country, currency, date, type, UN>, 
+                                 <'DDA', furtherData>, ATC, IAD>), 
                             IAD>
                    ) @ #i2 )
               case Bank_Commits_Visa
               solve( Bank_Commits_Visa( $Bank.1, $Terminal.1,
                                         <~PAN, <'DDA', furtherData>, 'OnlinePIN', 
                                          <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                                         MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                             <'DDA', furtherData>, ATC, IAD), 
+                                         MAC(f(~MK, ATC),
+                                             <<TTQ, $amount, country, currency, date, type, UN>, 
+                                              <'DDA', furtherData>, ATC, IAD>), 
                                          IAD>,
                                         channelID.1, ARPC
                      ) ▶₀ #i2 )
@@ -4805,16 +4869,18 @@ next
             solve( Commit( B2, P2,
                            <'Terminal', 'Bank', ~PAN, <'DDA', furtherData>, 'OnlinePIN', 
                             <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                            MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                <'DDA', furtherData>, ATC, IAD), 
+                            MAC(f(~MK, ATC),
+                                <<TTQ, $amount, country, currency, date, type, UN>, 
+                                 <'DDA', furtherData>, ATC, IAD>), 
                             IAD>
                    ) @ #i2 )
               case Bank_Commits_Visa
               solve( Bank_Commits_Visa( $Bank.1, $Terminal.1,
                                         <~PAN, <'DDA', furtherData>, 'OnlinePIN', 
                                          <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                                         MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                             <'DDA', furtherData>, ATC, IAD), 
+                                         MAC(f(~MK, ATC),
+                                             <<TTQ, $amount, country, currency, date, type, UN>, 
+                                              <'DDA', furtherData>, ATC, IAD>), 
                                          IAD>,
                                         channelID.1, ARPC
                      ) ▶₀ #i2 )
@@ -4843,16 +4909,18 @@ next
             solve( Commit( B2, P2,
                            <'Card', 'Bank', ~PAN, <'DDA', furtherData>, CVM, 
                             <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                            MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                <'DDA', furtherData>, ATC, IAD), 
+                            MAC(f(~MK, ATC),
+                                <<TTQ, $amount, country, currency, date, type, UN>, 
+                                 <'DDA', furtherData>, ATC, IAD>), 
                             IAD>
                    ) @ #i2 )
               case Bank_Commits_Visa
               solve( Bank_Commits_Visa( $Bank.1, $Terminal.1,
                                         <~PAN, <'DDA', furtherData>, CVM, 
                                          <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                                         MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                             <'DDA', furtherData>, ATC, IAD), 
+                                         MAC(f(~MK, ATC),
+                                             <<TTQ, $amount, country, currency, date, type, UN>, 
+                                              <'DDA', furtherData>, ATC, IAD>), 
                                          IAD>,
                                         channelID.1, ARPC
                      ) ▶₀ #i2 )
@@ -4871,16 +4939,18 @@ next
             solve( Commit( B2, P2,
                            <'Card', 'Bank', ~PAN, <'DDA', furtherData>, CVM, 
                             <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                            MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                <'DDA', furtherData>, ATC, IAD), 
+                            MAC(f(~MK, ATC),
+                                <<TTQ, $amount, country, currency, date, type, UN>, 
+                                 <'DDA', furtherData>, ATC, IAD>), 
                             IAD>
                    ) @ #i2 )
               case Bank_Commits_Visa
               solve( Bank_Commits_Visa( $Bank.1, $Terminal.1,
                                         <~PAN, <'DDA', furtherData>, CVM, 
                                          <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                                         MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                             <'DDA', furtherData>, ATC, IAD), 
+                                         MAC(f(~MK, ATC),
+                                             <<TTQ, $amount, country, currency, date, type, UN>, 
+                                              <'DDA', furtherData>, ATC, IAD>), 
                                          IAD>,
                                         channelID.1, ARPC
                      ) ▶₀ #i2 )
@@ -4899,16 +4969,18 @@ next
             solve( Commit( B2, P2,
                            <'Card', 'Bank', ~PAN, <'DDA', furtherData>, 'OnlinePIN', 
                             <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                            MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                <'DDA', furtherData>, ATC, IAD), 
+                            MAC(f(~MK, ATC),
+                                <<TTQ, $amount, country, currency, date, type, UN>, 
+                                 <'DDA', furtherData>, ATC, IAD>), 
                             IAD>
                    ) @ #i2 )
               case Bank_Commits_Visa
               solve( Bank_Commits_Visa( $Bank.1, $Terminal.1,
                                         <~PAN, <'DDA', furtherData>, 'OnlinePIN', 
                                          <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                                         MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                             <'DDA', furtherData>, ATC, IAD), 
+                                         MAC(f(~MK, ATC),
+                                             <<TTQ, $amount, country, currency, date, type, UN>, 
+                                              <'DDA', furtherData>, ATC, IAD>), 
                                          IAD>,
                                         channelID.1, ARPC
                      ) ▶₀ #i2 )
@@ -4927,16 +4999,18 @@ next
             solve( Commit( B2, P2,
                            <'Card', 'Bank', ~PAN, <'DDA', furtherData>, 'OnlinePIN', 
                             <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                            MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                <'DDA', furtherData>, ATC, IAD), 
+                            MAC(f(~MK, ATC),
+                                <<TTQ, $amount, country, currency, date, type, UN>, 
+                                 <'DDA', furtherData>, ATC, IAD>), 
                             IAD>
                    ) @ #i2 )
               case Bank_Commits_Visa
               solve( Bank_Commits_Visa( $Bank.1, $Terminal.1,
                                         <~PAN, <'DDA', furtherData>, 'OnlinePIN', 
                                          <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                                         MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                             <'DDA', furtherData>, ATC, IAD), 
+                                         MAC(f(~MK, ATC),
+                                             <<TTQ, $amount, country, currency, date, type, UN>, 
+                                              <'DDA', furtherData>, ATC, IAD>), 
                                          IAD>,
                                         channelID.1, ARPC
                      ) ▶₀ #i2 )
@@ -4962,16 +5036,18 @@ next
             solve( Commit( B2, P2,
                            <'Terminal', 'Bank', ~PAN, <'DDA', furtherData>, CVM, 
                             <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                            MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                <'DDA', furtherData>, ATC, IAD), 
+                            MAC(f(~MK, ATC),
+                                <<TTQ, $amount, country, currency, date, type, UN>, 
+                                 <'DDA', furtherData>, ATC, IAD>), 
                             IAD>
                    ) @ #i2 )
               case Bank_Commits_Visa
               solve( Bank_Commits_Visa( $Bank.1, $Terminal.1,
                                         <~PAN, <'DDA', furtherData>, CVM, 
                                          <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                                         MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                             <'DDA', furtherData>, ATC, IAD), 
+                                         MAC(f(~MK, ATC),
+                                             <<TTQ, $amount, country, currency, date, type, UN>, 
+                                              <'DDA', furtherData>, ATC, IAD>), 
                                          IAD>,
                                         channelID.1, ARPC
                      ) ▶₀ #i2 )
@@ -4990,16 +5066,18 @@ next
             solve( Commit( B2, P2,
                            <'Terminal', 'Bank', ~PAN, <'DDA', furtherData>, CVM, 
                             <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                            MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                <'DDA', furtherData>, ATC, IAD), 
+                            MAC(f(~MK, ATC),
+                                <<TTQ, $amount, country, currency, date, type, UN>, 
+                                 <'DDA', furtherData>, ATC, IAD>), 
                             IAD>
                    ) @ #i2 )
               case Bank_Commits_Visa
               solve( Bank_Commits_Visa( $Bank.1, $Terminal.1,
                                         <~PAN, <'DDA', furtherData>, CVM, 
                                          <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                                         MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                             <'DDA', furtherData>, ATC, IAD), 
+                                         MAC(f(~MK, ATC),
+                                             <<TTQ, $amount, country, currency, date, type, UN>, 
+                                              <'DDA', furtherData>, ATC, IAD>), 
                                          IAD>,
                                         channelID.1, ARPC
                      ) ▶₀ #i2 )
@@ -5018,16 +5096,18 @@ next
             solve( Commit( B2, P2,
                            <'Terminal', 'Bank', ~PAN, <'DDA', furtherData>, 'OnlinePIN', 
                             <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                            MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                <'DDA', furtherData>, ATC, IAD), 
+                            MAC(f(~MK, ATC),
+                                <<TTQ, $amount, country, currency, date, type, UN>, 
+                                 <'DDA', furtherData>, ATC, IAD>), 
                             IAD>
                    ) @ #i2 )
               case Bank_Commits_Visa
               solve( Bank_Commits_Visa( $Bank.1, $Terminal.1,
                                         <~PAN, <'DDA', furtherData>, 'OnlinePIN', 
                                          <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                                         MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                             <'DDA', furtherData>, ATC, IAD), 
+                                         MAC(f(~MK, ATC),
+                                             <<TTQ, $amount, country, currency, date, type, UN>, 
+                                              <'DDA', furtherData>, ATC, IAD>), 
                                          IAD>,
                                         channelID.1, ARPC
                      ) ▶₀ #i2 )
@@ -5046,16 +5126,18 @@ next
             solve( Commit( B2, P2,
                            <'Terminal', 'Bank', ~PAN, <'DDA', furtherData>, 'OnlinePIN', 
                             <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                            MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                <'DDA', furtherData>, ATC, IAD), 
+                            MAC(f(~MK, ATC),
+                                <<TTQ, $amount, country, currency, date, type, UN>, 
+                                 <'DDA', furtherData>, ATC, IAD>), 
                             IAD>
                    ) @ #i2 )
               case Bank_Commits_Visa
               solve( Bank_Commits_Visa( $Bank.1, $Terminal.1,
                                         <~PAN, <'DDA', furtherData>, 'OnlinePIN', 
                                          <TTQ, $amount, country, currency, date, type, UN>, ATC, 
-                                         MAC(f(~MK, ATC), <TTQ, $amount, country, currency, date, type, UN>,
-                                             <'DDA', furtherData>, ATC, IAD), 
+                                         MAC(f(~MK, ATC),
+                                             <<TTQ, $amount, country, currency, date, type, UN>, 
+                                              <'DDA', furtherData>, ATC, IAD>), 
                                          IAD>,
                                         channelID.1, ARPC
                      ) ▶₀ #i2 )
@@ -5232,7 +5314,7 @@ summary of summaries:
 analyzed: models-n-proofs/contactless/Visa_DDA_Low.spthy
 
   output:          models-n-proofs/contactless/Visa_DDA_Low.proof
-  processing time: 1878.714985412s
+  processing time: 1553.727155365s
   executable (exists-trace): verified (29 steps)
   bank_accepts (all-traces): falsified - found trace (17 steps)
   auth_to_terminal_minimal (all-traces): falsified - found trace (14 steps)
