@@ -1,0 +1,21 @@
+{
+    "debug.javascript.resourceRequestOptions": {
+        
+    },
+    "cmake.options.statusBarVisibility": "visible",
+    "cmake.options.advanced": {
+        "configure": {},
+        "build": {
+            "statusBarVisibility": "inherit",
+            "inheritDefault": "visible"
+        },
+        "launch": {
+            "statusBarVisibility": "inherit",
+            "inheritDefault": "visible"
+        },
+        "debug": {
+            "statusBarVisibility": "inherit",
+            "inheritDefault": "visible"
+        }
+    }
+}
