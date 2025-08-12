@@ -95,7 +95,7 @@ class EMVAttackDemo:
         """Generate fake Transaction Certificate"""
         # Simulate fake master key and cryptogram
         fake_key = hashlib.sha256(f"fake_key_{pan}".encode()).digest()[:16]
-        fake_iad = os.urandom(8)
+        fake_iad = b'\x01\x02\x03\x04\x05\x06\x07\x08'  # Deterministic fake IAD
         
         # Build fake AC (Application Cryptogram)
         mac_input = struct.pack('>H', atc) + fake_iad
