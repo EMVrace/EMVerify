@@ -9,7 +9,7 @@ functions:  NEq/2, //inequality
             MAC/2, MAC_arpc/2, //cipher-based MACs
             p8/1 //padding function, used in ARPC computation w/ Method 1
 
-//=============== Attack Vector 1: Cryptographic Protocol Downgrade Attack ===============//
+//=============== Attack Vector 1: Selective Authentication Downgrade Attack ===============//
 /*
  * Attack Name: "Selective Authentication Downgrade"
  * Target: Terminal's authentication method selection logic
