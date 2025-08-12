@@ -251,7 +251,7 @@ relay.process_apdu(
         for attack_name, demo_func in attacks:
             success = demo_func()
             # Map attack names to success rates
-            rate_key = attack_name.lower().replace(' ', '_').replace('authentication_', 'auth_')
+            rate_key = attack_name_to_key.get(attack_name, None)
             success_rate = self.attack_success_rates.get(rate_key, 0.0)
             print(f"Attack Success Rate: {success_rate:.1%}")
             print(f"Status: {'DEMONSTRATION COMPLETE' if success else 'FAILED'}")
