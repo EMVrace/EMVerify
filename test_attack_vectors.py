@@ -129,7 +129,7 @@ def run_formal_verification_test():
             'generic=AttackVectors', 
             'attack=auth_downgrade',
             'lemma=downgrade_attack_feasible'
-        ], capture_output=True, text=True, timeout=60)
+        ], capture_output=True, text=True, timeout=timeout)
         
         if result.returncode == 0:
             return True, "Formal verification test passed"
