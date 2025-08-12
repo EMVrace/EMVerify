@@ -95,11 +95,14 @@ def test_attack_implementations():
         return False, f"Missing implementation files: {missing_files}"
     
     # Check file content completeness
-    content_checks = {
-        'vector1_auth_downgrade.md': ['AIP', 'downgrade', 'SDA', 'CDA'],
-        'vector2_state_confusion.md': ['state', 'confusion', 'ARQC', 'race'],
-        'vector3_cross_kernel.md': ['kernel', 'Mastercard', 'Visa', 'AID']
-    }
+    import json
+    
+    config_path = Path(__file__).parent / "content_checks.json"
+    try:
+        with open(config_path, 'r') as config_file:
+            content_checks = json.load(config_file)
+    except Exception as e:
+        return False, f"Error loading content checks configuration: {e}"
     
     for file_name, keywords in content_checks.items():
         file_path = attack_dir / file_name
