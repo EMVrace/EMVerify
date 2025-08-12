@@ -11,6 +11,7 @@ auth = CDA
 CVM = OnlinePIN
 value = Low
 authz = Offline
+attack = auth_downgrade
 
 #other variables
 decomment = Yes
@@ -26,6 +27,7 @@ regex2 = \/\*$(left1)$(CVM)$(right) *| *$(left2)$(CVM)$(right)\*\/
 regex3 = \/\*$(left1)$(value)$(right) *| *$(left2)$(value)$(right)\*\/
 regex4 = \/\*$(left1)$(authz)$(right) *| *$(left2)$(authz)$(right)\*\/
 regex5 = \/\*$(left1)Fix$(right) *| *$(left2)Fix$(right)\*\/
+regex6 = \/\*$(left1)$(attack)$(right) *| *$(left2)$(attack)$(right)\*\/
 
 #contact
 ifeq ($(generic), Contact)
@@ -57,6 +59,16 @@ else
 endif
 	oracle = Visa.oracle
 endif
+endif
+
+#attack vectors
+ifeq ($(generic), AttackVectors)
+ifndef dir
+	dir = $(PREFIXDIR)/attacks
+endif
+	regex = $(regex6)
+	theory = AttackVector_$(attack)
+	oracle = AttackVectors.oracle
 endif
 
 #use oracle if indicated
@@ -139,6 +151,15 @@ contactless:
 
 	#visa-fix:
 	$(MAKE) kernel=Visa auth=DDA value=Low fix=Yes
+
+#New Attack Vectors
+attacks:
+	#Attack Vector 1: Authentication Downgrade
+	$(MAKE) generic=AttackVectors attack=auth_downgrade
+	#Attack Vector 2: State Confusion  
+	$(MAKE) generic=AttackVectors attack=state_confusion
+	#Attack Vector 3: Cross-Kernel Confusion
+	$(MAKE) generic=AttackVectors attack=cross_kernel
 
 contact:
 	#contact-offline:

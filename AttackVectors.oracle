@@ -1,0 +1,19 @@
+/* Oracle file for EMV Attack Vector Analysis */
+
+/* Attack Vector 1: Authentication Downgrade */
+"downgrade_attack_feasible" : "z3",
+"high_value_weak_auth_possible" : "z3", 
+"authentication_integrity" : "z3",
+"adversary_can_downgrade" : "z3",
+
+/* Attack Vector 2: State Confusion */
+"state_confusion_achievable" : "z3",
+"duplicate_authorization_possible" : "z3",
+"transaction_state_integrity" : "z3",
+"adversary_can_confuse_state" : "z3",
+
+/* Attack Vector 3: Cross-Kernel Confusion */
+"cross_kernel_confusion_feasible" : "z3",
+"mixed_kernel_processing_possible" : "z3", 
+"kernel_processing_integrity" : "z3",
+"adversary_can_switch_kernel" : "z3"

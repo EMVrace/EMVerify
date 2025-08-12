@@ -1,0 +1,186 @@
+theory AttackVectors
+
+begin
+
+builtins:   signing, hashing, asymmetric-encryption, xor
+
+functions:  NEq/2, //inequality
+            f/2, //key derivation function
+            MAC/2, MAC_arpc/2, //cipher-based MACs
+            p8/1 //padding function, used in ARPC computation w/ Method 1
+
+//=============== Attack Vector 1: Selective Authentication Downgrade Attack ===============//
+/*
+ * Attack Name: "Selective Authentication Downgrade"
+ * Target: Terminal's authentication method selection logic
+ * Concept: Force a terminal to accept weaker authentication (CDA → DDA → SDA)
+ *          by manipulating AIP fields in relay attacks
+ */
+
+//Adversary intercepts and modifies AIP to downgrade authentication
+rule Adversary_Downgrades_AIP:
+    let AIP_original = <'CDA', furtherData>
+        AIP_downgraded = <'SDA', furtherData>  //Force downgrade to weakest auth
+        PDOL = <TTQ, $amount, country, currency, date, type, ~UN>
+    in
+    [ In(<'GET_PROCESSING_OPTIONS_RESPONSE', AIP_original, 'AFL', track2ED, IAD, AC, CID, ATC, CTQ>) ]
+  --[ DowngradeAttack('CDA_to_SDA'),
+      AdversaryActive(),
+      WeakAuth(AIP_downgraded) ]->
+    [ Out(<'GET_PROCESSING_OPTIONS_RESPONSE', AIP_downgraded, 'AFL', track2ED, IAD, AC, CID, ATC, CTQ>) ]
+
+//Terminal accepts downgraded authentication without proper validation
+rule Terminal_Accepts_Downgraded_Auth:
+    let AIP = <'SDA', furtherData>  //Weakest authentication method
+        transaction = <~PAN, AIP, CVM, PDOL, ATC, AC, IAD>
+    in
+    [ In(<'GET_PROCESSING_OPTIONS_RESPONSE', AIP, 'AFL', track2ED, IAD, AC, CID, ATC, CTQ>),
+      !Value($amount, 'High') ]  //High value transaction with weak auth
+  --[ TerminalAcceptsWeakAuth(transaction),
+      VulnerableTerminal(),
+      HighValueLowSecurity($amount, AIP) ]->
+    [ Terminal_Compromised(transaction) ]
+
+//=============== Attack Vector 2: Transaction State Confusion Attack ===============//
+/*
+ * Attack Name: "Authorization State Race Condition"
+ * Target: Terminal's transaction state machine during online/offline switching
+ * Concept: Exploit timing windows between authorization decisions to create 
+ *          conflicting transaction states
+ */
+
+//Card initially requests online authorization
+rule Card_Requests_Online_Auth:
+    let CID = 'ARQC'  //Authorization Request Cryptogram
+        transaction = <~PAN, AIP, CVM, PDOL, ATC, AC, IAD>
+    in
+    [ !Shk(~PAN, ~MK),
+      !ATC(ATC) ]
+  --[ CardRequestsOnline(~PAN, ATC),
+      TransactionState(~PAN, ATC, 'PENDING_ONLINE') ]->
+    [ Card_Awaiting_Online_Auth(~PAN, transaction, ATC),
+      Out(<CID, AC, ATC>) ]
+
+//Adversary injects offline approval before online response
+rule Adversary_Injects_Offline_Approval:
+    let CID_fake = 'TC'  //Transaction Certificate (offline approval)
+        AC_fake = MAC(f(~MK_adv, ATC), <PDOL, AIP, ATC, IAD_fake>)
+    in
+    [ Card_Awaiting_Online_Auth(~PAN, transaction, ATC),
+      Fr(~MK_adv),  //Adversary's fake master key
+      Fr(~IAD_fake) ]
+  --[ StateConfusionAttack(),
+      FakeOfflineApproval(~PAN, ATC),
+      AdversaryActive() ]->
+    [ Out(<CID_fake, AC_fake, ATC>) ]
+
+//Terminal processes both online and offline responses
+rule Terminal_State_Confusion:
+    let transaction = <~PAN, AIP, CVM, PDOL, ATC, AC, IAD>
+    in
+    [ In(<'ARQC', AC_online, ATC>),    //Online response
+      In(<'TC', AC_offline, ATC>) ]     //Conflicting offline response
+  --[ TerminalStateConfusion(~PAN, ATC),
+      DuplicateAuthorization(ATC),
+      VulnerableTerminal() ]->
+    [ Terminal_Confused_State(transaction, AC_online, AC_offline) ]
+
+//=============== Attack Vector 3: Cross-Kernel Confusion Attack ===============//
+/*
+ * Attack Name: "Inter-Scheme Protocol Confusion"
+ * Target: Terminals processing multiple card schemes (Mastercard/Visa)
+ * Concept: Switch between different kernel processing mid-transaction to
+ *          exploit implementation differences
+ */
+
+//Card initially identifies as Mastercard
+rule Card_Identifies_As_Mastercard:
+    let AID = 'Mastercard'
+        AIP = <'CDA', furtherData>
+    in
+    [ !AID(~PAN, AID),
+      !Shk(~PAN, ~MK) ]
+  --[ CardKernel(~PAN, 'Mastercard'),
+      InitialKernelSelection('Mastercard') ]->
+    [ Card_Kernel_State(~PAN, 'Mastercard', AIP),
+      Out(<'SELECT_RESPONSE', AID, AIP>) ]
+
+//Adversary switches to Visa kernel mid-transaction
+rule Adversary_Switches_Kernel:
+    let AID_visa = 'Visa'
+        AIP_visa = <'DDA', furtherData>  //Different processing logic
+    in
+    [ Card_Kernel_State(~PAN, 'Mastercard', AIP_mc),
+      In(<'GET_PROCESSING_OPTIONS', PDOL>) ]
+  --[ KernelSwitchAttack(),
+      CrossKernelConfusion(~PAN),
+      AdversaryActive() ]->
+    [ Card_Kernel_State(~PAN, 'Visa', AIP_visa),
+      Out(<'GPO_RESPONSE_VISA', AIP_visa, 'AFL', track2ED, IAD, AC, CID, ATC, CTQ>) ]
+
+//Terminal processes mixed kernel responses
+rule Terminal_Cross_Kernel_Confusion:
+    let transaction_mc = <~PAN, AIP_mc, CVM, PDOL, ATC, AC_mc, IAD_mc>
+        transaction_visa = <~PAN, AIP_visa, CVM, PDOL, ATC, AC_visa, IAD_visa>
+    in
+    [ In(<'SELECT_RESPONSE', 'Mastercard', AIP_mc>),
+      In(<'GPO_RESPONSE_VISA', AIP_visa, 'AFL', track2ED, IAD_visa, AC_visa, CID, ATC, CTQ>) ]
+  --[ CrossKernelVulnerability(),
+      TerminalProcessingError(),
+      MixedKernelTransaction(~PAN, ATC) ]->
+    [ Terminal_Kernel_Confused(transaction_mc, transaction_visa) ]
+
+//=============== Attack Properties ===============//
+
+//Attack Vector 1 Properties
+lemma downgrade_attack_feasible:
+  "Ex t #i. TerminalAcceptsWeakAuth(t)@i"
+
+lemma high_value_weak_auth_possible:
+  "Ex amount aip #i. HighValueLowSecurity(amount, aip)@i"
+
+//Attack Vector 2 Properties  
+lemma state_confusion_achievable:
+  "Ex pan atc #i. TerminalStateConfusion(pan, atc)@i"
+
+lemma duplicate_authorization_possible:
+  "Ex atc #i. DuplicateAuthorization(atc)@i"
+
+//Attack Vector 3 Properties
+lemma cross_kernel_confusion_feasible:
+  "Ex pan #i. CrossKernelConfusion(pan)@i"
+
+lemma mixed_kernel_processing_possible:
+  "Ex pan atc #i. MixedKernelTransaction(pan, atc)@i"
+
+//Security Properties - These should fail under attack conditions
+lemma authentication_integrity:
+  "All t #i. TerminalAcceptsWeakAuth(t)@i ==> 
+   Ex A #k. Honest(A)@i & Compromise(A)@k"
+
+lemma transaction_state_integrity:
+  "All pan atc #i. TerminalStateConfusion(pan, atc)@i ==> 
+   Ex A #k. Honest(A)@i & Compromise(A)@k"
+
+lemma kernel_processing_integrity:
+  "All pan #i. CrossKernelConfusion(pan)@i ==> 
+   Ex A #k. Honest(A)@i & Compromise(A)@k"
+
+//Attack feasibility under adversary capabilities
+lemma adversary_can_downgrade:
+  "Ex #i. DowngradeAttack('CDA_to_SDA')@i"
+
+lemma adversary_can_confuse_state:
+  "Ex #i. StateConfusionAttack()@i"
+
+lemma adversary_can_switch_kernel:
+  "Ex #i. KernelSwitchAttack()@i"
+
+//Restrictions
+restriction unique_atc:
+  "All atc #i #j. !ATC(atc)@i & !ATC(atc)@j ==> #i = #j"
+
+restriction honest_participants:
+  "All A #i. Honest(A)@i ==> not (Ex #j. Compromise(A)@j)"
+
+end
