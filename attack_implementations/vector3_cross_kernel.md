@@ -1,9 +1,9 @@
 # Attack Vector 3: Cross-Kernel Confusion Attack
 
 ## Concept
-**Nome:** "Confusão Inter-Esquemas de Pagamento"  
-**Alvo:** Terminais que processam múltiplos esquemas de cartão (Mastercard/Visa)
-**Objetivo:** Alternar entre diferentes kernels de processamento durante a transação para explorar diferenças de implementação e criar inconsistências de validação.
+**Name:** "Cross-Scheme Confusion"  
+**Target:** Terminals that process multiple card schemes (Mastercard/Visa)
+**Objective:** Switch between different processing kernels during the transaction to exploit implementation differences and create validation inconsistencies.
 
 ## Technical Description
 
